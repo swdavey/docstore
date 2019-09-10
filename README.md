@@ -13,7 +13,7 @@ The collateral includes:
 7. **create.json** and **update.json** - input json files that support the tutorial
 8. **answer.js** - avoid this until you have done the tutorial or have become stuck!
 
-To run the demonstration you will need to:
+**To run the demonstration you will need to:**
 1. Download and install MySQL 8.0.17 or later. Linux users: if you install from the tar-ball then you will also need to install MySQL Shell. When installing from repos (using yum or apt) then MySQL shell should be installed. Similarly windows users will install MySQL Shell as part of the server install. A good resource for installing the tar-ball binaries on Linux is https://dev.mysql.com/doc/mysql-secure-deployment-guide/8.0/en/ . The working assumption for the rest of this readme is that you will be working on a local database server (i.e. localhost)
 2. Once the database server and mysql shell binaries are installed you will need to load the contents of nycfood.zip. Assuming you are using linux the process is as follows:
 ```
@@ -27,9 +27,9 @@ To run the demonstration you will need to:
   mysqlsh localhost:33060+ ssl js> \q
   unix$
 ```
-3. load the file tutorial.html into your browser and follow its instructions.
+3. Load the file demo.html into your browser and follow its instructions.
 
-To run the tutorial you will need to:
+**To run the tutorial you will need to:**
 1. Download and install Node v10; the original tutorial use 10.16.3
 2. Once the node binaries are installed, you will need to create a project. The following details an approach on Linux
 ```
