@@ -1,0 +1,406 @@
+<html>
+<body>
+<h1>Groningen Tutorial Notes</h1>
+
+
+<h2>Contents</h2>
+<a href=#howto>How to Run the Tutorial</a><br>
+<a href=#exercises>Exercises</a></br>
+<a href=#docs>CRUD Collection Operations</a><p>
+
+
+<a name=howto><h2>How to Run the Tutorial</h2>
+The Readme in the Github repository swdavey/docstore details how to install the tutorial.<p>
+
+The purpose of this tutorial is to get used to coding XDevAPI methods in a real-world context (well nearly real-world, the code is very
+basic so that you can understand what is going on; don't copy it and use it in production!).<p>
+
+To run the tutorial we would suggest you use three or four terminals as follows:
+<ol>
+<li>To edit the index.js code.</li>
+<li>To run the code - remember to restart after you have made edits!</li>
+<li>To run the cURL commands.</li>
+<li>To run mysql shell (optional) - it may help to query the schema through mysql shell whilst you are working.</li>
+</ol>
+
+The <b>index.js</b> file is mostly complete but requires you to code XDevAPI snippets. In order that the uncoded snippets don't cause the code to fail each exercise
+segment is commented and the exercises run top to bottom. You should only remove the comment when you come to do the exercise. For example, removing the commented line<pre>
+/* Exercise 1 
+</pre>
+will allow you to work on "Exercise 1" whilst leaving all the other unfinished exercises commented.<p>
+
+
+To run the code (which is a webserver that waits for REST (http) calls) change directory to the node project (for our purposes assume
+it is /home/stuart/dev/tutorial) and then run as follows:
+<pre>
+cd /home/stuart/dev/tutorial
+node index.js
+</pre>
+You should see a message that a webserver is listening on port 3000 (unless of course you changed the port)<p>
+
+To test the code, change into the test directory (from the project's home directory). From here you will run cURL commands. 
+For the most part it is not necessary to be in this directory but some of the tests will require you to use the json files that reside 
+in it. Test that the server is working by running the cURL command:<pre>
+curl -X GET http://localhost:3000/nycfood/boroughs | jq
+</pre>
+You should see a list of the boroughs of New York printed out. Note: the "|" (pipe) into jq is only available on Linux and 
+pretty-prints the output in JSON format. If using Windows omit the pipe and jq from your command.
+
+<hr><hr>
+
+
+<a name=exercises><h2>Exercises</h2>
+<h3>Exercise 1: Get a List of Sorted Cuisines</h3>
+Read about the <a href=#findFunction>find()</a> method, then complete the body of the following function: 
+<pre>
+    app.get('/nycfood/cuisines', async function(req,res) {
+  
+    });
+</pre>
+Your code should be similar to that of that of <font face='monospace'>app.get('/nycfood/boroughs', async function(req, res) { ... })</font>. You 
+will probably get the most out of this exercise by typing the text rather than cutting and pasting because typing will mean you 
+read the code.<p>
+<b>Testing</b><br>
+Remember to save your work and then restart the program (i.e. node index.js)<br>
+Enter the command<pre>
+curl -X GET http://localhost:3000/nycfood/cuisines | jq
+</pre>
+You should see a list of approximately 70 different cuisines in alphabetical order.
+<hr>
+
+
+<h3>Exercise 2: Get an Abbreviated List of all Outlets in New York</h3>
+For this exercise most of the typing has been done for you. Your task is to code a chained <a href=#findMethod>find()</a> request that 
+will display a subset of the <a href=#findFunction>fields</a> of each outlet and to sort the outlets in borough, cuisine, name order. 
+Don't worry about binding variables - that will be covered in the next exercise. The output should be an array (list) of objects of the form:<pre>
+[
+    {
+        "_id": value,
+        "borough": value,
+        "cuisine": value,
+        "name": value
+    },
+    {
+        "_id": value,
+        "borough": value,
+        "cuisine": value,
+        "name": value
+    },
+	...
+]
+</pre>
+The order of the fields within each object does not matter, but the objects themselves should be sorted on borough, cuisine and 
+name, such that all outlets for Manhatten will be displayed before Staten Island, and within a borough American cuisine will come 
+before French, and an outlet named "Aardvark" will come before one called "Zebra".<p> 
+
+<b>Testing</b><br>
+Remember to save your work and then restart the program (i.e. node index.js)<br>
+Enter the command<pre>
+curl -X GET http://localhost:3000/nycfood/outlets | jq
+</pre>
+<hr>
+
+
+<h3>Exercise 3: Get the Details of an Individual Outlet; Use binding</h3>
+Prepared Statements, sometimes called <it>Parametized Statements</it> provide the database with SQL templates that it can parse and optimize prior to it receiving real requests.
+The Prepared statements provide placeholders for the values that will be used. When we come to use a Prepared Statement we bind values to these placeholders.<p>
+
+In this exercise use the bind() method to parametize the _id of the outlet you are 
+<a href=#findMethod>searching</a> for.<p>
+
+<b>Testing</b><br>
+Remember to save your work and then restart the program (i.e. node index.js)<br>
+Enter the command (do not put the _id in quotes)<pre>
+curl -X GET http://localhost:3000/nycfood/outlet/<font color=red>&lt_id-of-chosen-doc&gt</font> | jq
+</pre>
+You should see a document detailing all the fields of the outlet identified by _id.
+<hr>
+
+
+<h3>Exercise 4: Create a New Outlet</h3>
+<a href=#addMethod>Creating</a> a new outlet is potentially the easiest of all the tasks. When coding in node.js there is 
+no need for the execute() to have a callback function because a no documents are being returned (as per a find() operation); 
+all the information regarding the success or failure of the operation will be returned in a results object.<p> 
+
+<b>Testing</b><br>
+Remember to save your work and then restart the program (i.e. node index.js)<br>
+Make sure you are in the directory /home/opc/dev/node/test, then print the create.json file so that you can see what is about to be POSTed:<pre>
+cat create.json
+</pre>
+Now enter the command<pre>
+curl -X POST -H 'Content-type: application/json' -d @create.json http://localhost:3000/nycfood/create | jq
+</pre>
+From the response, extract the id and then run:<pre>
+curl -X GET http://localhost:3000/nycfood/outlet/<font color=red>&lt_id-of-new-doc&gt</font> | jq
+</pre> 
+You should see your new document which details all its fields. Note down the _id value.
+<hr>
+
+
+<h3>Exercise 5: Remove an Outlet</h3>
+In order to <a href=#removeMethod>remove</a> an outlet you must provide some search criteria. For this exercise use _id because 
+we know that each outlet will have a unique _id (and so we won't inadvertently remove a wrong outlet). You should use a bind() 
+variable for the _id.<p> 
+
+<b>Testing</b><br>
+Remember to save your work and then restart the program (i.e. node index.js)<br>
+Take the _id of the document you have just created and then add it to the following cURL command and then run the command
+<pre>
+curl -X DELETE -H 'Content-type: application/json' -d'{"id": <font color=red>"&lt_id&gt"</font>}'  http://localhost:3000/nycfood/remove | jq
+</pre>
+You should see that no documents have been affected.
+Check that it has been removed by running:<pre>
+curl -X GET http://localhost:3000/nycfood/outlet/&lt_id&gt | jq
+</pre>
+Nothing other than an empty array [] should be returned.
+<hr>
+
+
+<h3>Exercise 6: (Update) Grade an Outlet</h3>
+If you look at an outlet you will see that each one has an array of gradings:<pre>
+
+    {
+	    "_id": "123456780..."
+        ...
+        "grades": [{
+            "time": {
+                "$time": 1498...
+            },
+            "grade": "A",
+            "score": 10
+        },{
+            "time": {
+                "$time": 1495...
+            },
+            "grade": "A",
+            "score" : 7
+        }]
+	    ...
+    }
+	
+</pre>
+Your task is to <a href=#modifyMethod>update</a> an outlet (specified by an _id) with a new grading.<p> 
+
+<b>Testing</b><br>
+Remember to save your work and then restart the program (i.e. node index.js)<br>
+Assuming you deleted your created document, re-create it<pre>
+curl -X POST -H 'Content-type: application/json' -d @create.json http://localhost:3000/nycfood/create | jq
+</pre>
+Take the new _id and list it:<pre>
+curl -X GET http://localhost:3000/nycfood/outlet/<font color=red>&lt_id-of-new-doc&gt</font> | jq
+</pre>
+You will note that the grades array is empty. Update it (twice):<pre>
+curl -X PATCH -H 'Content-type: application/json' -d'{"id": <font color=red>"&lt_id&gt"</font>, "grade": "A", "score": 10}' http://localhost:3000/nycfood/grade | jq
+curl -X PATCH -H 'Content-type: application/json' -d'{"id": <font color=red>"&lt_id&gt"</font>, "grade": "B", "score": 7}' http://localhost:3000/nycfood/grade | jq
+</pre>
+Now list it again:<pre>
+curl -X GET http://localhost:3000/nycfood/outlet/<font color=red>&lt_id-of-new-doc&gt</font> | jq
+</pre>
+You should see the gradings
+<hr>
+
+
+<h3>Exercise 7: Bonus Points for Reading! Update an Outlet using Single Document Operations</h3> 
+Uncomment and read the code (remember to remove the closing comment */). Note how the getOne() and replaceOne() methods simplify the CRUD XdevAPI interface further. Note also
+that this PUT method can change all of the values other than the ID.<p>
+
+<b>Testing</b><br>
+Remember to save your work and then restart the program (i.e. node index.js)<br>
+Assume Welsh cuisine has fallen out of favour, and the inhabitants of Manhatten are seeking to go back to their Dutch roots. Print
+the update.json file in order to see how we are going to change the Welsh restaurant into a Dutch one. Note that you will have
+to edit this file, replacing the value for id with the _id of your document.<pre>
+cat update.json
+nano update.json  (replace id value)
+curl -X PUT -H 'Content-type: application/json' -d @update.json http://localhost:3000/nycfood/update | jq
+</pre>
+List it again and you should see that the outlet is now Dutch!<pre>
+curl -X GET http://localhost:3000/nycfood/outlet/<font color=red>&lt_id-of-new-doc&gt</font> | jq
+</pre>
+Grade it if you wish:
+<pre>
+curl -X PATCH -H 'Content-type: application/json' -d'{"id": <font color=red>"&lt_id&gt"</font>, "grade": "A", "score": 10}' http://localhost:3000/nycfood/grade | jq
+</pre>
+<hr><hr>
+
+
+
+<a name=docs><h2>CRUD Collection Operations</h2>
+The following documentation should allow you to complete the tutorial. Full documentation can be found in the <a href=https://dev.mysql.com/doc/x-devapi-userguide/en/>XdevAPI User Guide</a>.
+Specific command documentation can be found in its <a href=https://dev.mysql.com/doc/x-devapi-userguide/en/mysql-x-crud-ebnf-definitions.html>CRUD EBNF</a> section.
+<hr>
+
+<a name=addFunction><h3>Create => add()</h3>
+<b><pre>
+    CollectionAddFunction
+      ::= ( '.add(' ( DocumentOrJSON | '[' DocumentOrJSON ( ',' DocumentOrJSON )* ']' )? ')' )+ 
+          ( '.execute()' )?
+</pre></b>
+<p>
+<b>Examples:</b><br>
+In all cases assume a collection object, myCol, has been retrieved from the session.
+<pre>
+    myCol.add({"name": "fred",  "age": 30, "intelligent": false}).execute();
+
+    myCol.add([{"name": "barney",  "age": 30, "intelligent": false},{"name": "betty",  "age": 24, "intelligent": true}]).execute();
+  
+    var wobj = {"name": "wilma",  "age": 28, "intelligent": true);
+    myCol.add(wobj).execute();
+</pre>
+<b>Notes:</b><br> 
+There are no other chaining methods, not even bind().<br>
+For reasons of clarity the above examples detail node.js code <b>without</b> the use of Promises. In the real world this 
+code will need to be wrapped by either traditional Promise code or the new async-await syntax.<br>
+The return value from the execute() will detail how many rows and items have been affected and provide any auto-generated Ids (_id) in
+an array. It will also provide a count of warnings and a corresponding array of warning strings with severity levels.
+<hr>
+
+<a name=findFunction><h3>Read => find()</h3>
+<b><pre>
+    CollectionFindFunction
+      ::= '.find(' SearchConditionStr? ')' ( '.fields(' ProjectedDocumentExprStr ')' )?
+        ( '.groupBy(' SearchExprStrList ')' )? ( '.having(' SearchConditionStr ')' )?
+        ( '.sort(' SortExprStrList ')' )? ( '.limit(' NumberOfRows ')' ( '.offset(' NumberOfRows ')' )? )?
+        ( '.lockExclusive(' LockContention ')' | '.lockShared(' LockContention ')' )? 
+        ( '.bind(' PlaceholderValues ')' )*
+        ( '.execute()' )?
+</pre></b>
+<b>Examples:</b><br>
+In all cases assume a collection object, myCol, has been retrieved from the session.<br>
+Pay particular attention to how quotes have been used.
+<pre>
+    myCol.find().execute();                           // returns all documents in the collection
+
+    myCol.find().sort("name").execute();              // returns all documents sorted in order of "name" value ascending
+
+    myCol.find().sort("name","age desc").execute();   // returns all documents sorted in order 
+                                                      // of "name" value ascending, then age (oldest - youngest)
+
+    myCol.find('name = "fred"').execute();            // returns all documents that have the key "name" and value "fred"
+
+    myCol.find('age > 25').execute();                 // returns all documents 
+
+    myCol.find().fields(["name","age"]).execute();    // returns all documents but only displays the keys and values for the fields shown    
+</pre>
+<b>Notes:</b><br> 
+For reasons of clarity the above examples detail node.js code <b>without</b> the use of Promises. In the real world this 
+code will need to be wrapped by either traditional Promise code or the new async-await syntax.<br>
+In the case of node.js, the return value from the execute() will detail how many rows and items have been affected as well as providing a 
+count of warnings and a corresponding array of warning strings with severity levels. The actual results set (the "returned" documents) 
+will be accessible through a callback function, e.g.
+<pre>
+    var myArray = [];
+    // the await syntax waits for the asynchronous call to complete so allowing sequentially ordered code execution
+    var result = await myCol.find().execute(function(doc) {
+        myArray.push(doc);
+    });
+
+    // use result object
+    if (result.warningsCount > 0) {
+        // do something
+    }
+	
+    // use myArray object
+    for (myElem of myArray) {
+        console.log(myElem);
+    }
+</pre> 
+The node.js case is different from every other language (including "vanilla" JavaScript) where the results object is returned in
+the normal manner. For example in PHP
+<pre>
+    $res = $myCol->find()->execute();
+    print(json_encode($res->fetchAll()));
+</pre>
+<hr>
+<hr>
+
+<a name=modifyFunction><h3>Update => modify()</h3>
+<b><pre>
+    CollectionModifyFunction
+      ::= '.modify(' SearchConditionStr ')'
+        ( '.set(' CollectionField ',' ExprOrLiteral ')' |
+          '.unset(' CollectionFields ')' |
+          '.arrayInsert(' CollectionField ',' ExprOrLiteral ')' |
+          '.arrayAppend(' CollectionField ',' ExprOrLiteral ')' |
+          '.arrayDelete(' CollectionField ')' |
+          '.patch(' DocumentOrJSON ')'
+        )+
+        ( '.sort(' SortExprStrList ')' )? ( '.limit(' NumberOfRows ')' )?
+        ( '.bind(' PlaceholderValues ')' )*
+        ( '.execute()' )?
+</pre></b>
+<b>Examples:</b><br>
+In all cases assume a collection object, myCol, has been retrieved from the session.<br>
+Pay particular attention to how quotes have been used.
+<pre>
+    myCol.modify().set('name',"Jim").exexcute();  // Caution: sets all documents to have a key called "name" with a value "fred"
+                                                  // If the key is not present it will be created.
+    myCol.modify().unset('name').execute();       // Caution: removes the key, "name", from all documents in the collection
+	
+Array handling: assume the following document structure
+	
+    {
+        "_id": string
+        "name": string
+        "colleagues": [string, string, ...];
+        "workHistory": [{
+            "job": string,
+            "from": timestamp,
+            "to": timestamp
+		},{
+            ...
+        }]
+    }
+
+	// Insert a new string at the start of the colleagues array for the doc with the _id "123456"
+	// and then update the workHistory by appending a workHistory element
+    var myId = "123456";
+    var myJob = {
+        "job": "MySQL Engineer",
+        "from": new Date().getTime(),
+        "to": new Date(2019,12,31).getTime()
+    };
+	
+	// Perform the inserts - note the use of a bind variable for _id only
+	myCol.modify('_id = :p1').arrayInsert('colleagues[0]',"Thea").bind("p1",myId).execute();
+
+	// Append a the workHistory element, myJob
+    myCol.modify('_id = :p1').arrayAppend('workHistory',myJob).bind("p1",myId).execute();    
+</pre>
+<b>Notes:</b><br> 
+For reasons of clarity the above examples detail node.js code <b>without</b> the use of Promises. In the real world this 
+code will need to be wrapped by either traditional Promise code or the new async-await syntax.<br> 
+The return value from the execute() will detail how many rows and items have been affected. 
+It will also provide a count of warnings and a corresponding array of warning strings with severity levels.<br>
+It should be possible to bind the objects being appended/inserted into arrays - a conversation with Development is ongoing... 
+<hr>
+
+
+<a name=removeFunction><h3>Delete => remove()</h3>
+<b><pre>
+    CollectionRemoveFunction 
+      ::= '.remove(' SearchConditionStr ')'
+        ( '.sort(' SortExprStrList ')' )? ( '.limit(' NumberOfRows ')' )?
+        ( '.bind(' PlaceholderValues ')' )*
+        ( '.execute()' )?
+</pre></b>
+<b>Examples:</b><br>
+In all cases assume a collection object, myCol, has been retrieved from the session.
+<pre>
+    myCol.remove('_id = "12345"').execute();    // removes the document with the _id of 12345 from the collection
+
+    myCol.remove('age &lt 25').execute();       // removes all documents that have an age key with a value of less than 25
+
+    var myvar = 29;
+    myCol.remove('age &gt :p1').bind("p1",myvar).execute();    // With objects rather than literals we can use binding
+</pre>
+<b>Notes:</b><br> 
+For reasons of clarity the above examples detail node.js code <b>without</b> the use of Promises. In the real world this code 
+will need to be wrapped by either traditional Promise code or the new async-await syntax otherwise results will be difficult to
+capture and use.<br> 
+The return value from the execute() will detail how many rows and items have been affected. 
+It will also provide a count of warnings and a corresponding array of warning strings with severity levels.<br> 
+Regardless of language you should use bind() when having to make multiple deletions.
+<hr>
+</body>
+</html>
+ 
