@@ -15,7 +15,8 @@ The collateral includes:
 
 To run the demonstration you will need to:
 1. Download and install MySQL 8.0.17 or later. Linux users: if you install from the tar-ball then you will also need to install MySQL Shell. When installing from repos (using yum or apt) then MySQL shell should be installed. Similarly windows users will install MySQL Shell as part of the server install. A good resource for installing the tar-ball binaries on Linux is https://dev.mysql.com/doc/mysql-secure-deployment-guide/8.0/en/ . The working assumption for the rest of this readme is that you will be working on a local database server (i.e. localhost)
-2. Once the database server and mysql shell binaries are installed you will need to load the contents of nycfood.zip. Assuming you are using linux the process is as follows 
+2. Once the database server and mysql shell binaries are installed you will need to load the contents of nycfood.zip. Assuming you are using linux the process is as follows:
+```
   unix$ pwd                   // So you know which directory you are unzipping the file
   /home/stuart                // you will need to know this path when you perform the util.importJson (see below)  
   unix$ unzip nycfood.zip
@@ -25,10 +26,42 @@ To run the demonstration you will need to:
   mysqlsh localhost:33060+ ssl js> util.importJson('/home/stuart/nycfood.json', {'schema': 'nycfood', 'collection': 'outlets'})
   mysqlsh localhost:33060+ ssl js> \q
   unix$
+```
 
 To run the tutorial you will need to:
 1. Download and install Node v10; the original tutorial use 10.16.3
-2. Set the username and password in the session connection pool. If you don't want to use the root user then you can create a user as follows (use a different name and password if you like):
+2. Once the node binaries are installed, you will need to create a project. The following details an approach on Linux
+```
+  unix$ pwd
+  /home/stuart                // or whatever directory you are starting from
+  unix$ mkdir -p dev/tutorial
+  unix$ cd dev/tutorial
+  unix$ npm init              // You can add as little or as much as you want here. The simplest thing is to press return without adding any detail
+  unix$ npm install express --save          // load the modules the tutorial requires
+  unix$ npm install body-parser --save
+  unix$ npm install @mysql/xdevapi --save
+```
+3. Copy the index.js file (and potentially the answer.js file) into the project's directory, and then create a test directory and copy in the create.json and update json files. The directory structure should look something like
+```
+  unix$ pwd
+  unix$ /home/stuart/dev/tutorial
+  unix$ ls -l
+  total 40
+  -rw-rw-r--.  1 stuart stuart  5794 Sep 10 13:56 answer.js
+  -rw-rw-r--.  1 stuart stuart  6031 Sep  3 15:58 index.js
+  drwxrwxr-x. 55 stuart stuart  4096 Aug 24 16:49 node_modules
+  -rw-rw-r--.  1 stuart stuart   315 Aug 24 16:49 package.json
+  -rw-rw-r--.  1 stuart stuart 15151 Aug 24 11:13 package-lock.json
+  drwxrwxr-x.  2 stuart stuart    44 Sep  3 16:12 test
+  unix$ ls -l test
+  total 8
+  -rw-rw-r--. 1 stuart stuart 236 Aug 24 21:55 create.json
+  -rw-rw-r--. 1 stuart stuart 108 Sep  3 16:12 update.json
+  unix$
+```
+  
+3. Set the username and password in the session connection pool. If you don't want to use the root user then you can create a user as follows (use a different name and password if you like):
+```
   unix$ mysql
   mysqlsh js> \c root@localhost
   mysqlsh localhost:33060+ ssl js> \sql
@@ -36,25 +69,27 @@ To run the tutorial you will need to:
   mysqlsh localhost:33060+ ssl SQL> GRANT SELECT, INSERT, UPDATE, DELETE ON nycfood.* TO 'tutorial'@'%';
   mysqlsh localhost:33060+ ssl js> \q
   unix$
-  
+```  
 Then, using your favourite header change the code that sets up the clien session connection pool in index.js
-FROM
 
+FROM
+```
 const client = mysqlx.getClient(
         {user: '<username>', host: 'localhost', password: '<password>', port: 33060},
         {pooling: { enabled: true, maxIdleTime: 30000, maxSize: 25, queueTimeout: 10000}}
 );
-
+```
 TO
+```
 const client = mysqlx.getClient(
         {user: 'tutorial', host: 'localhost', password: 'MyPa55w0rd', port: 33060},
         {pooling: { enabled: true, maxIdleTime: 30000, maxSize: 25, queueTimeout: 10000}}
 );
-
+```
 Note: you should make a similar change to answer.js but you may not wish to look at this code without trying the tutorial first!
 
 If you have worked through the demonstration then you may wish to clean down the outlets collection before doing the tutorial. The following details how to do this:
-
+```
   unix$ pwd
   /home/stuart                // Change directory to wherever you have saved nycfood.json
   unix$ mysqlsh
@@ -64,5 +99,5 @@ If you have worked through the demonstration then you may wish to clean down the
   mysqlsh localhost:33060+ ssl js> util.importJson('/home/stuart/nycfood.json', {'schema': 'nycfood', 'collection': 'outlets'})
   mysqlsh localhost:33060+ ssl js> \q
   unix$
-  
+```  
 You should now be good to go. For details load the file tutorial.html into your browser and follow its instructions.
