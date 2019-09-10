@@ -70,7 +70,7 @@ To run the tutorial you will need to:
   mysqlsh localhost:33060+ ssl js> \q
   unix$
 ```  
-Then, using your favourite header change the code that sets up the clien session connection pool in index.js
+Then, using your favourite header change the code that sets up the client session connection pool in index.js by entering your values for <username> and <password>.
 
 FROM
 ```
