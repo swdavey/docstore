@@ -1,17 +1,17 @@
 # docstore
 MySQL Document Store allows developers to work with SQL relational tables and schema-less JSON collections. To make that possible MySQL has created the X Dev API which puts a strong focus on CRUD by providing a fluent API allowing you to work with JSON documents in a natural way. The X Protocol is highly extensible and is optimized for CRUD as well as SQL API operations.
 
-The purpose of this repository is to make available the contents and collateral of the presentation I gave to the Groningen NL PHP Meetup on 05/09/2019 such that a broader audience can make use of it.
+The purpose of this repository is to make available the contents and collateral of the presentation I gave to the Groningen NL PHP Meetup on 05/09/2019 such that a broader audience can make use of it. The recommended approach is: read the presentation; then work through the demo; then work through the tutorial, and then read the presentation again.  
 
 The collateral includes:
-1. PDF version of the presentation
-2. Demonstration walk through so you can practice using Document Store, the XDevAPI and MySQL shell
-3. nycfood.zip - required for both the demonstration and the tutorial
-4. createJoinDB.js - a script to load a schema that will allow the joining of collections to collections and collections to tables to be demonstrated.
-5. Tutorial Instructions (HTML) - the tutorial is a hands-on practical that will allow you to use the CRUD interface in a programming context. It is written in node.js but you should not need to be fluent in this language to be able to complete the tutorial.
-6. Tutorial Code Template, index.js - use this if you want to do the tutorial.
-7. Tutorial Test Data - a selection of cURL commands to exercise the code as well as the json input files, create.json and update.json
-8. Tutorial Code Answer, answer.js - avoid this until you have done the tutorial!
+1. **DocumentStore.pdf** - the slide deck of the presentation
+2. **demo.html** - details how to perform the demo given in Groningen. This will allow you to get up to speed with both MySQL shell and the XDevAPI. It covers simple to advanced usage; the more advanced items include indexing collections and the joining of collections to collections and tables.
+3. **tutorial.html** - the demo introduces you to the XDevAPI whereas the tutorial allows you to get hands on practice of using its CRUD interface in a programming context. It is written in node.js but you should not need to be fluent in this language to be able to complete the tutorial.
+4. **nycfood.zip** - test data required for both the demonstration and the tutorial
+5. **createJoinDB.js** - a supporting script to load a schema that will allow the joining of collections to collections and collections to tables to be demonstrated without having to type for a day.
+6. **index.js** - this is the source code that you will modify in order to complete the tutorial.
+7. **create.json** and **update.json** - input json files that support the tutorial
+8. **answer.js** - avoid this until you have done the tutorial or have become stuck!
 
 To run the demonstration you will need to:
 1. Download and install MySQL 8.0.17 or later. Linux users: if you install from the tar-ball then you will also need to install MySQL Shell. When installing from repos (using yum or apt) then MySQL shell should be installed. Similarly windows users will install MySQL Shell as part of the server install. A good resource for installing the tar-ball binaries on Linux is https://dev.mysql.com/doc/mysql-secure-deployment-guide/8.0/en/ . The working assumption for the rest of this readme is that you will be working on a local database server (i.e. localhost)
@@ -27,6 +27,7 @@ To run the demonstration you will need to:
   mysqlsh localhost:33060+ ssl js> \q
   unix$
 ```
+3. load the file tutorial.html into your browser and follow its instructions.
 
 To run the tutorial you will need to:
 1. Download and install Node v10; the original tutorial use 10.16.3
@@ -36,7 +37,7 @@ To run the tutorial you will need to:
   /home/stuart                // or whatever directory you are starting from
   unix$ mkdir -p dev/tutorial
   unix$ cd dev/tutorial
-  unix$ npm init              // You can add as little or as much as you want here. The simplest thing is to press return without adding any detail
+  unix$ npm init              // The simplest thing is to press return to all prompts without adding any detail
   unix$ npm install express --save          // load the modules the tutorial requires
   unix$ npm install body-parser --save
   unix$ npm install @mysql/xdevapi --save
