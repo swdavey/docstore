@@ -5,7 +5,7 @@ const mysqlx = require('@mysql/xdevapi');
 const app = express();
 const port = 3000;
 const client = mysqlx.getClient(
-	{user: 'phpuser', host: 'localhost', password: 'fred', port: 33060},
+	{user: '<username>', host: 'localhost', password: '<password>', port: 33060},
 	{pooling: { enabled: true, maxIdleTime: 30000, maxSize: 25, queueTimeout: 10000}}
 );
 
