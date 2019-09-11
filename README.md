@@ -5,7 +5,7 @@ The purpose of this repository is to make available the contents and collateral 
 
 The collateral includes:
 1. **DocumentStore.pdf** - the slide deck of the presentation
-2. **demo.html** - details how to perform the demo given in Groningen. This will allow you to get up to speed with both MySQL shell and the XDevAPI. It covers simple to advanced usage; the more advanced items include indexing collections and the joining of collections to collections and tables.
+2. **demo.html** - details how to perform the demo given in Groningen. This will allow you to get up to speed with both MySQL shell and the XDevAPI. It covers simple to advanced usage; the more advanced items include indexing collections and the joining of collections to collections and tables. Note that this file has a dependency on the **nosql.png** file.
 3. **tutorial.html** - the demo introduces you to the XDevAPI whereas the tutorial allows you to get hands on practice of using its CRUD interface in a programming context. It is written in node.js but you should not need to be fluent in this language to be able to complete the tutorial.
 4. **nycfood.zip** - test data required for both the demonstration and the tutorial
 5. **createJoinDB.js** - a supporting script to load a schema that will allow the joining of collections to collections and collections to tables to be demonstrated without having to type for a day.
@@ -15,7 +15,7 @@ The collateral includes:
 
 **To run the demonstration you will need to:**
 1. Download and install MySQL 8.0.17 or later. Linux users: if you install from the tar-ball then you will also need to install MySQL Shell. When installing from repos (using yum or apt) then MySQL shell should be installed. Similarly windows users will install MySQL Shell as part of the server install. A good resource for installing the tar-ball binaries on Linux is https://dev.mysql.com/doc/mysql-secure-deployment-guide/8.0/en/ . The working assumption for the rest of this readme is that you will be working on a local database server (i.e. localhost)
-2. Once the database server and mysql shell binaries are installed you will need to load the contents of nycfood.zip. Assuming you are using linux the process is as follows:
+2. Once the database server and mysql shell binaries are installed you will need to load the contents of nycfood.zip. For this, your machine will need zip/unzip binaries. Assuming you are using linux the process is as follows:
 ```
   unix$ pwd                   // So you know which directory you are unzipping the file
   /home/stuart                // you will need to know this path when you perform the util.importJson (see below)  
@@ -101,4 +101,6 @@ If you have worked through the demonstration then you may wish to clean down the
   mysqlsh localhost:33060+ ssl js> \q
   unix$
 ```  
+4. Your machine will need cURL binaries.
+
 You should now be good to go. For details load the file tutorial.html into your browser and follow its instructions.
