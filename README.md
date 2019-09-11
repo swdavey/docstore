@@ -1,11 +1,11 @@
 # docstore
 MySQL Document Store allows developers to work with SQL relational tables and schema-less JSON collections. To make that possible MySQL has created the X Dev API which puts a strong focus on CRUD by providing a fluent API allowing you to work with JSON documents in a natural way. The X Protocol is highly extensible and is optimized for CRUD as well as SQL API operations.
 
-The purpose of this repository is to make available the contents and collateral of the presentation I gave to the Groningen NL PHP Meetup on 05/09/2019 such that a broader audience can make use of it. The recommended approach is: read the presentation; then work through the demo; then work through the tutorial, and then read the presentation again.  
+The purpose of this repository is to make available the contents and collateral of the presentation I gave to the Groningen NL PHP Meetup on 05/09/2019 and Swanseacon Conference Wales on 09/09/2019 such that a broader audience can make use of it. The recommended approach is: read the presentation; then work through the demo; then work through the tutorial, and then read the presentation again.  
 
 The collateral includes:
 1. **DocumentStore.pdf** - the slide deck of the presentation
-2. **demo.html** - details how to perform the demo given in Groningen. This will allow you to get up to speed with both MySQL shell and the XDevAPI. It covers simple to advanced usage; the more advanced items include indexing collections and the joining of collections to collections and tables. Note that this file has a dependency on the **nosql.png** file.
+2. **demo.html** - details how to perform the demo given in Groningen and Swansea. This will allow you to get up to speed with both MySQL shell and the XDevAPI. It covers simple to advanced usage; the more advanced items include indexing collections and the joining of collections to collections and tables. Note that this file has a dependency on the **nosql.png** file.
 3. **tutorial.html** - the demo introduces you to the XDevAPI whereas the tutorial allows you to get hands on practice of using its CRUD interface in a programming context. It is written in node.js but you should not need to be fluent in this language to be able to complete the tutorial.
 4. **nycfood.zip** - test data required for both the demonstration and the tutorial
 5. **createJoinDB.js** - a supporting script to load a schema that will allow the joining of collections to collections and collections to tables to be demonstrated without having to type for a day.
