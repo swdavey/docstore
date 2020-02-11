@@ -8,9 +8,9 @@ The structure of the collateral is as follows:
 2. **demo** folder - details of how to perform the demonstration using mysql shell
 3. **node.js tutorial** folder - source code and details of how to perform the tutorial
 4. **java tutorial** folder - maven pom file, source code and details of how to perform the tutorial
-5. **utilities** folder - scripts to setup/cleandown the database
+5. **utils** folder - scripts to setup/cleandown the database
 6. **testdata** folder - JSON documents to support the demo and tutorials
 
 **To run the demonstration and tutorials you will need to:**
 1. Download and install MySQL 8.0.17 or later. Linux users: if you install from the tar-ball then you will also need to install MySQL Shell. When installing from repos (using yum or apt) then MySQL shell should be installed. Similarly windows users will install MySQL Shell as part of the server install. A good resource for installing the tar-ball binaries on Linux is https://dev.mysql.com/doc/mysql-secure-deployment-guide/8.0/en/ . The working assumption for the rest of this readme is that you will be working on a local database server (i.e. localhost)
-2. Go to either the demo folder or either of the tutorial folders and follpw the instructions in the readme. 
+2. Go to either the demo folder or either of the tutorial folders and follow the instructions in the README. 
