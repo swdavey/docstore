@@ -1,6 +1,7 @@
 var mysqlx = require('mysqlx');
 
-var session = mysqlx.getSession('root:Simp50n5!@localhost');
+// Edit the next call, replacing <password> with your password
+var session = mysqlx.getSession('root:<password>@localhost');
 
 session.dropSchema('joindb');
 var schema = session.createSchema('joindb');
