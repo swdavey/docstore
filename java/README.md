@@ -18,7 +18,9 @@ Note: annotations are used within the code. These will only work if Eclipse has 
 * Spring
   * In order to provide a REST interface (GET, POST, PUT, PATCH, DELETE, etc) as well as a HTTP server endpoint and classes to handle responses and errors, etc.   
 * Lombok
-  * In order to avoid writing a lot of boiler plate code for the POJO classes. With the exception of one class, ODate.java, all POJOs have their constructors, getter, setter and toString methods implemented by Lombok.
+  * In order to avoid writing a lot of boiler plate code for the POJO classes. With the exception of one class, ODate.java, all POJOs have their constructors, getter, setter and toString methods implemented by Lombok. The reason ODate is different is because Lombok does not handle the getting and setting of the $date member because it starts with a **$**. If $date is changed to mydate then it will work. However, given we did not want to change the data set (which includes the key $date) we had to write these methods. Some points to note:
+    * This is not an issue with Document Store, nor is it an issue with the data set, nor is it an issue with Java since starting a variable name with a **$** is permitted; it is a problem with Lombok
+    * If you use Lombok and don't write the getter and setter methods for ODate then the (Java) error you receive may lead you to believe it is a problem with the Jackson libraries and bean serialization. It is not, we have tested and it is Lombok.
   * Lombok needs to be included in the Pom **and** downloaded/installed in Eclipse. 
 * Gson
   * Google’s JSON to Java, Java to JSON mapper. Other mappers could have been used (e.g. Jackson’s) but we found this to be the simplest method of converting between JSON and Java objects.
@@ -28,7 +30,7 @@ Note: annotations are used within the code. These will only work if Eclipse has 
   
 Refer to the Maven Pom file for full details and versioning.
 
-## Structure of Code ##
+## Overview of Code ##
 For simplicity all the code is held within a single package: com.swd.nycfood.outlets.
 
 The code follows the Spring MVC pattern, and consists of:
@@ -39,13 +41,14 @@ The code follows the Spring MVC pattern, and consists of:
   * Output POJOs: PersistedOutlet.java, AbbrvOutlet.java, Cuisine.java, Borough.java
   * Both Outlet.java and PersistedOutlet.java contain Address.java and an ArrayList of type Grade.java. 
 
-Outlet.java and PersistedOutlet.java are very similar the only differences being that the latter has an additional **\_id** member as well as the method, **void insertGrade(Grade newGrade)**. This is because Outlet.java is an input POJO and should only be used for the creation of an Outlet document in the database whereas PersistedOutlet should be used for all subsequent operations. When an Outlet is inserted into the database (as a JSON document), the database provides it with a unique identifier: this identifier is both added to the JSON document and used as a primary key by the database. Given the identifier is now part of the persisted document in the database, when we retrieve the document from the database and map it into a Java object we need to make provision for this new field, hence, the additional **\_id** member in PersistedOutlet.java class. Some further points:
+Outlet.java and PersistedOutlet.java are very similar classes the only differences being that the latter has an additional **\_id** member as well as the method, **void insertGrade(Grade newGrade)**. This is because Outlet.java is an input POJO and is only used for the creation of an Outlet document in the database, whereas PersistedOutlet is used for all subsequent operations. When an Outlet is inserted into the database (as a JSON document), the database provides it with a unique identifier: this identifier is both added to the JSON document and used as a primary key by the database. Given the identifier is now part of the persisted document in the database, when we retrieve the document from the database and map it into a Java object we need to make provision for this new field, hence, the additional **\_id** member in PersistedOutlet.java class. Some further points:
 
 * Instead of allowing the database to provide a unique identifier for the Outlet document, we could have provided one from our application code. However, our code would have to guarantee its uniqueness. This is not too difficult to do with a single connection, but may get more complex when hundreds of users are attempting to concurrrently add documents. As such, it was decided to leave this task to the database (because we know it does it correctly and efficiently).
 * Inheritance could have been used such that PersistedOutlet extends Outlet. However, inheritance seems to work against the intentions of Lombok: if it were used we would have ended up writing a constructor for PersistedOutlet. 
 
-Returning to the other difference, the **void insertGrade(Grade newGrade)** method, the reason this is present in PersistedOutlet.java and not Outlet.java is due to a simple design decision: when an Outlet document is first created there will be no grading; grading is an operation subsequent to creation and therefore only operate on PersistedOutlet objects.
+Returning to the other difference, the **void insertGrade(Grade newGrade)** method. The reason this is present in PersistedOutlet.java and not Outlet.java is due to a simple design decision: when an Outlet document is first created there will be no grading; grading is an operation subsequent to creation and therefore only operate on PersistedOutlet objects.
 
+The input POJOs, Outlet.java, Grade.java and by virtue of their inclusion in these classes Address.java and ODate.java all use the Lombok annotation @Data. This annotation automatically provides the constructor, setter and getter methods as well as a toString() method. However, because we wanted to u Lombok does not implement the getter and setter methods correctly
 
 ## Overview of com.mysql.cj.xdevapi Classes Used
 The Java API can be found at https://dev.mysql.com/doc/dev/connector-j/8.0/?com/mysql/cj/xdevapi/package-summary.html
