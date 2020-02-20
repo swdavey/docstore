@@ -18,9 +18,7 @@ Note: annotations are used within the code. These will only work if Eclipse has 
 * Spring
   * In order to provide a REST interface (GET, POST, PUT, PATCH, DELETE, etc) as well as a HTTP server endpoint and classes to handle responses and errors, etc.   
 * Lombok
-  * In order to avoid writing a lot of boiler plate code for the POJO classes. With the exception of one class, ODate.java, all POJOs have their constructors, getter, setter and toString methods implemented by Lombok. The reason ODate is different is because Lombok does not handle the getting and setting of the ODate member $date because it starts with a **$**. If $date is changed to mydate then it will work. However, given we did not want to change the data set (which uses $date) we had to write these methods. Some points to note:
-    * This is not an issue with Document Store, nor is it an issue with the data set, nor is it an issue with Java (it's legal syntax); it is a problem with Lombok. We believe it is related to https://github.com/rzwitserloot/lombok/issues/2115
-    * If you use Lombok and don't write the getter and setter methods for ODate then the (Java) error you receive may lead you to believe it is a problem with the Jackson libraries and bean serialization. It is not, we have tested and proved it is Lombok.
+  * In order to avoid writing a lot of boiler plate code for the POJO classes. With the exception of one class, ODate.java, all POJOs have their constructors, getter, setter and toString methods implemented by Lombok. The reason ODate is different is because Lombok does not handle the getting and setting of the ODate member $date because it starts with a **$**. If $date is changed to mydate then it will work. However, given we did not want to change the data set (which uses $date) we had to write these methods. To be clear, this is not an issue with Document Store, nor is it an issue with the data set, nor is it an issue with Java because it's legal syntax; it is a problem with Lombok and would seem to be the same as this issue https://github.com/rzwitserloot/lombok/issues/2115
   * Lombok needs to be included in the Pom **and** downloaded/installed in Eclipse. 
 * Gson
   * Google’s JSON to Java, Java to JSON mapper. Other mappers could have been used (e.g. Jackson’s) but we found this to be the simplest method of converting between JSON and Java objects.
@@ -48,7 +46,9 @@ Outlet.java and PersistedOutlet.java are very similar classes the only differenc
 
 Returning to the other difference, the **void insertGrade(Grade newGrade)** method. The reason this is present in PersistedOutlet.java and not Outlet.java is due to a simple design decision: when an Outlet document is first created there will be no grading; grading is an operation subsequent to creation and therefore only operate on PersistedOutlet objects.
 
-The input POJOs, Outlet.java, Grade.java and by virtue of their inclusion in these classes Address.java and ODate.java all use the Lombok annotation @Data. This annotation automatically provides the constructor, setter and getter methods as well as a toString() method. However, because we wanted to u Lombok does not implement the getter and setter methods correctly
+The input POJOs, Outlet.java, Grade.java and by virtue of their inclusion in these classes Address.java and ODate.java all use the Lombok annotation @NonNull on their members (where there members are not set at time of construction). This ensures that all keys have values otherwise Spring will return an error response. However, we have not gone as far as proper type checking with acceptable bounds: the point of this exercise is to demonstrate Document Store rather than write a perfect Java application. 
+
+As mentioned previously all POJOs with the exception of ODate use the Lombok @Data annotation which implements their constructor, getter, setter and toString methods. ODate cannot use @Data due to an [issue/bug](overview-of-code).
 
 ## Overview of com.mysql.cj.xdevapi Classes Used
 The Java API can be found at https://dev.mysql.com/doc/dev/connector-j/8.0/?com/mysql/cj/xdevapi/package-summary.html
