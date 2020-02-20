@@ -1,4 +1,7 @@
 # Java DocStore Tutorial
+## Introduction
+First and foremostly this is not meant to be a masterclass in Java. This tutorial's purpose is to show how MySQL's CRUD interface to Document Store can be used in Java. However, in an attempt to provide some realism I have  
+
 ## Development Environment
 * Eclipse
 * Java
@@ -21,14 +24,18 @@ Note: annotations are used within the code. These will only work if Eclipse has 
 Refer to the Maven Pom file for full details.
 
 ## Structure of Code ##
-For simplicity all the code is held within a single package: com.swd...
+For simplicity all the code is held within a single package: com.swd.nycfood.outlets 
 The code follows the Spring MVC pattern, and consists of:
-* A launcher class
-* A controller class
-* A series of POJOs
-  * Inputs: Outlet.java, Grade.javA
-  * Outputs: PesistedOutlet, AbbrvOutlet, Cuisine.java, Borough.jav
-
+* A launcher class: OutletsApplication.java
+* A controller class: OutletsController.java
+* A series of POJOs:
+  * Inputs: Outlet.java, Grade.java (which has ODate.java)
+  * Outputs: PersistedOutlet.java, AbbrvOutlet.java, Cuisine.java, Borough.java
+  * Both Outlet.java and PersistedOutlet.java contain Address.java and an ArrayList of type Grade.java. 
+The essential difference between the two classes is that PersistedOutlet has an additional \_id member as well as the method, void insertGrade(Grade newGrade). This is because Outlet.java is an input which is used in the creation of an Outlet document in the database. The database is responsible for providing a unique identifier, \_id. Therefore once an Outlet document has been persisted in the database it has an \_id field.   
+  
+  Clearly, I could have used inheritance such that PersistedOutlet extends Outlet 
+  
 ## Overview of com.mysql.cj.xdevapi Classes Used
 The Java API can be found at https://dev.mysql.com/doc/dev/connector-j/8.0/?com/mysql/cj/xdevapi/package-summary.html
 
