@@ -48,7 +48,7 @@ Returning to the other difference, the **void insertGrade(Grade newGrade)** meth
 
 The input POJOs, Outlet.java, Grade.java and by virtue of their inclusion in these classes Address.java and ODate.java all use the Lombok annotation @NonNull on their members (where there members are not set at time of construction). This ensures that all keys have values otherwise Spring will return an error response. However, we have not gone as far as proper type checking with acceptable bounds: the point of this exercise is to demonstrate Document Store rather than write a perfect Java application. 
 
-As mentioned previously all POJOs with the exception of ODate use the Lombok @Data annotation which implements their constructor, getter, setter and toString methods. ODate cannot use @Data due to an [issue/bug](#Frameworks and Libraries Used).
+As mentioned previously all POJOs with the exception of ODate use the Lombok @Data annotation which implements their constructor, getter, setter and toString methods. ODate cannot use @Data due to an [issue/bug](#frameworks-and-libraries-used).
 
 ## Overview of com.mysql.cj.xdevapi Classes Used
 The Java API can be found at https://dev.mysql.com/doc/dev/connector-j/8.0/?com/mysql/cj/xdevapi/package-summary.html
