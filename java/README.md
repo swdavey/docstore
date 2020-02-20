@@ -1,30 +1,31 @@
 # Java DocStore Tutorial
 ## Introduction
-First and foremostly this is not meant to be a masterclass in Java. This tutorial's purpose is to show how MySQL's CRUD interface to Document Store can be used in Java. However, in an attempt to provide some realism I have set the tutorial in the context of a REST application, and made use of industry standard frameworks. 
+First and foremostly this is not meant to be a masterclass in Java. This tutorial's purpose is to show how MySQL's CRUD interface to Document Store can be used with Java. However, in an attempt to provide some realism we have set the tutorial in the context of a REST application, and made use of industry standard frameworks. 
 
 ## Development Environment
 * Eclipse - version 2019-12 (4.14.0). You can use whatever IDE you like or none at all; vi is great!
 * Java - 1.8 SE
-* Maven - 4.0.0. Again, this was my choice, you may prefer Gradle or some other build tool.
+* Maven - 4.0.0. You may prefer Gradle or some other build tool.
 
 Note: annotations are used within the code. These will only work if Eclipse has annotations enabled. This may also be true of other IDEs.
 
 ## Frameworks and Libraries Used
 * Spring
-  * In order to provide: REST interface (GET, POST, PUT, PATCH, DELETE, etc) with HTTP server endpoint, and classes to handle responses and errors, etc.   
+  * In order to provide a REST interface (GET, POST, PUT, PATCH, DELETE, etc) as well as a HTTP server endpoint and classes to handle responses and errors, etc.   
 * Lombok
   * In order to avoid writing a lot of boiler plate code for the POJO classes. With the exception of one class, ODate.java, all POJOs have their constructors, getter, setter and toString methods implemented by Lombok.
   * Lombok needs to be included in the Pom **and** downloaded/installed in Eclipse. 
 * Gson
-  * Google’s JSON to Java, Java to JSON mapper. Other mappers could have been used (e.g. Jackson’s) but I found this to be the simplest method of converting between JSON and Java objects.
+  * Google’s JSON to Java, Java to JSON mapper. Other mappers could have been used (e.g. Jackson’s) but we found this to be the simplest method of converting between JSON and Java objects.
 * com.mysql.cj.xdevapi
   * The connector that must be imported in order to connect to and query the MySQL Document Store.
-  * Available from Maven.central. Whilst Maven downloaded this library, it failed to pick up the dependency on Google Protocol Buffers
+  * Available from Maven.central. Whilst Maven downloaded this library, it failed to pick up the dependency on Google Protocol Buffers and these had to be referenced separately.
   
 Refer to the Maven Pom file for full details and versioning.
 
 ## Structure of Code ##
-For simplicity all the code is held within a single package: com.swd.nycfood.outlets 
+For simplicity all the code is held within a single package: com.swd.nycfood.outlets.
+
 The code follows the Spring MVC pattern, and consists of:
 * A launcher class: OutletsApplication.java
 * A controller class: OutletsController.java
@@ -33,10 +34,14 @@ The code follows the Spring MVC pattern, and consists of:
   * Output POJOs: PersistedOutlet.java, AbbrvOutlet.java, Cuisine.java, Borough.java
   * Both Outlet.java and PersistedOutlet.java contain Address.java and an ArrayList of type Grade.java. 
 
-The essential difference between the two classes is that PersistedOutlet has an additional \_id member as well as the method, void insertGrade(Grade newGrade). This is because Outlet.java is an input which is used in the creation of an Outlet document in the database. The database is responsible for providing a unique identifier, \_id. Therefore once an Outlet document has been persisted in the database it has an \_id field.   
-  
-  Clearly, I could have used inheritance such that PersistedOutlet extends Outlet 
-  
+Outlet.java and PersistedOutlet.java are very similar the only differences being that the latter has an additional \_id member as well as the method, void insertGrade(Grade newGrade). This is because Outlet.java is an input POJO and should only be used for the creation of an Outlet document in the database whereas PersistedOutlet should be used for all subsequent operations. When an Outlet is inserted into the database (as a JSON document), the database provides it with a unique identifier: this identifier is both added to the JSON document and used as a primary key. Given the identifier is now part of the persisted document in the database, when we retrieve the document from the database and map it into a Java object we need to make provision for this new field, hence, the additional \_id member in PersistedOutlet.java class. Some further points:
+
+* Instead of allowing the database to provide a unique identifier for the Outlet document, we could have provided one from our application code. However, our code would have needed to guarantee its uniqueness. This is not too difficult to do with a single connection, but may get more complex when hundreds of users are attempting to concurrrently add documents. As such, it was decided to leave this task to the database.
+* Inheritance could have been used such that PersistedOutlet extends Outlet. However, inheritance seems to work against the intentions of Lombok: if it were used we would have ended up writing a constructor for PersistedOutlet. 
+
+Returning to the other difference, the insertGrade method, the reason that this is present in PersistedOutlet.java and not Outlet.java is due to a simple design decision: when an Outlet document is first created there will be no grading; grading is an operation subsequent to creation and so will only operate on PersistedOutlet objects.
+
+
 ## Overview of com.mysql.cj.xdevapi Classes Used
 The Java API can be found at https://dev.mysql.com/doc/dev/connector-j/8.0/?com/mysql/cj/xdevapi/package-summary.html
 
