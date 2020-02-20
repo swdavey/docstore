@@ -18,9 +18,9 @@ Note: annotations are used within the code. These will only work if Eclipse has 
 * Spring
   * In order to provide a REST interface (GET, POST, PUT, PATCH, DELETE, etc) as well as a HTTP server endpoint and classes to handle responses and errors, etc.   
 * Lombok
-  * In order to avoid writing a lot of boiler plate code for the POJO classes. With the exception of one class, ODate.java, all POJOs have their constructors, getter, setter and toString methods implemented by Lombok. The reason ODate is different is because Lombok does not handle the getting and setting of the $date member because it starts with a **$**. If $date is changed to mydate then it will work. However, given we did not want to change the data set (which includes the key $date) we had to write these methods. Some points to note:
-    * This is not an issue with Document Store, nor is it an issue with the data set, nor is it an issue with Java since starting a variable name with a **$** is permitted; it is a problem with Lombok
-    * If you use Lombok and don't write the getter and setter methods for ODate then the (Java) error you receive may lead you to believe it is a problem with the Jackson libraries and bean serialization. It is not, we have tested and it is Lombok.
+  * In order to avoid writing a lot of boiler plate code for the POJO classes. With the exception of one class, ODate.java, all POJOs have their constructors, getter, setter and toString methods implemented by Lombok. The reason ODate is different is because Lombok does not handle the getting and setting of the ODate member $date because it starts with a **$**. If $date is changed to mydate then it will work. However, given we did not want to change the data set (which uses $date) we had to write these methods. Some points to note:
+    * This is not an issue with Document Store, nor is it an issue with the data set, nor is it an issue with Java (it's legal syntax); it is a problem with Lombok
+    * If you use Lombok and don't write the getter and setter methods for ODate then the (Java) error you receive may lead you to believe it is a problem with the Jackson libraries and bean serialization. It is not, we have tested and proved it is Lombok.
   * Lombok needs to be included in the Pom **and** downloaded/installed in Eclipse. 
 * Gson
   * Google’s JSON to Java, Java to JSON mapper. Other mappers could have been used (e.g. Jackson’s) but we found this to be the simplest method of converting between JSON and Java objects.
