@@ -63,14 +63,44 @@ rtytryt
 etretret
 
 ### DbDoc, Parsers and Strings
-In Document Store we can store JSON objects using either a String representation of the JSON object, or a DbDoc (see [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)). The author's experience of using Strings to store documents suggests that this method is only suitable for simple JSON objects (i.e. not containing nested JSON objects or arrays). When we retrieve documents from the database, they are returned as DbDoc objects. It is instructive to see the representations of a JSON document returned to a client.
+In Document Store we can store JSON objects using either a String representation of the JSON object, or as DbDoc representation (see [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)). The author's experience of using Strings to store documents suggests that this method is only suitable for simple JSON objects (i.e. not containing nested JSON objects or arrays). When we retrieve documents from the database, they are returned as DbDoc objects. These can be returned to the client via the Spring framework as is, or as a Java String, or as representative Java object. It is instructive to see each of these:
 
-markup: code()
-retyy
-trytryt
-ertret
+**Returning a DbDoc representation of a PersistedOutlet JSON document.** Firstly the code:
+```java
+@GetMapping("/nycfood/outet/{id}"
+ResponseEntity<Object> getOutlet(@PathVariable String id) {
+    ...
+    DocResult dr = col.find("_id = :param).bind("param",id).execute();
+    DbDoc doc = dr.fetchOne();
+    return new ResponseEntity<>(doc,HttpStatus.OK);
+}
+```
+Secondly what the client receives:
 
-and retrieve JSON objects using the Java interface [DbDoc.java.](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/DbDoc.html). 
+**Returning a String representation of a PersistedOutlet JSON document.** Firstly the code:
+```java
+@GetMapping("/nycfood/outet/{id}"
+ResponseEntity<Object> getOutlet(@PathVariable String id) {
+    ...
+    DocResult dr = col.find("_id = :param).bind("param",id).execute();
+    DbDoc doc = dr.fetchOne();
+    return new ResponseEntity<>(doc.toString(),HttpStatus.OK);
+}
+```
+Secondly what the client receives:
+
+**Using reflection to return a PersistedOutlet.** Firstly the code:
+```java
+@GetMapping("/nycfood/outet/{id}"
+ResponseEntity<Object> getOutlet(@PathVariable String id) {
+    ...
+    DocResult dr = col.find("_id = :param).bind("param",id).execute();
+    DbDoc doc = dr.fetchOne();
+    PersistedOutlet po = new Gson().fromJson(doc.toString(),PersistedOutlet.class));
+    return new ResponseEntity<>(po,HttpStatus.OK);
+}
+```
+Secondly what the client receives:
 
 JsonParser versus Gson
 
