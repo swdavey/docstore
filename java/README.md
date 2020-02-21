@@ -22,7 +22,7 @@ Note: annotations are used within the code. These will only work if Eclipse has 
   * In order to avoid writing a lot of boiler plate code for the POJO classes. With the exception of one class, ODate.java, all POJOs have their constructors, getter, setter and toString methods implemented by Lombok (i.e. by using the @Data annotation). The reason ODate is different is because Lombok does not handle the getting and setting of the ODate member $date because it starts with a **$**. If $date is changed to mydate then it will work. However, given we did not want to change the data set (which uses $date) we had to write these methods. To be clear, this is not an issue with Document Store, nor is it an issue with the data set, nor is it an issue with Java (because it's legal Java syntax); it is a problem with Lombok and would seem to be the same as this issue https://github.com/rzwitserloot/lombok/issues/2115
   * Lombok needs to be included in the Pom **and** downloaded/installed in Eclipse. 
 * Gson
-  * Google’s JSON to Java, Java to JSON mapper. Other mappers could have been used (e.g. Jackson’s) but we found this to be the simplest method of converting between JSON and Java objects. See also [DbDoc and String](#dbdoc-and-string)
+  * Google’s JSON to Java, Java to JSON mapper. Other mappers could have been used (e.g. Jackson’s) but we found this to be the simplest method of converting between JSON and Java objects. See also [DbDoc, Parsers and String](#dbdoc,-parsers-and-strings)
 * com.mysql.cj.xdevapi
   * The connector that must be imported in order to connect to and query the MySQL Document Store.
   * Available from Maven.central. Whilst Maven downloaded this library, it failed to pick up the dependency on Google Protocol Buffers and these had to be referenced separately.
@@ -51,7 +51,8 @@ The input POJOs, Outlet.java, Grade.java and classes they include all use the Lo
 
 As mentioned previously all POJOs with the exception of ODate use the Lombok @Data annotation which implements their constructor, getter, setter and toString methods. ODate cannot use @Data due to a Lombok [issue/bug](#frameworks-and-libraries-used).
 
-The output POJOs are 
+The output POJOs are nothing more than convenience classes such that Spring can deal with representative Java objects rather than generic DbDoc objects representations of JSON objects. For more details see [DbDoc, Parsers and String](#dbdoc,-parsers-and-strings) below.
+
 ## Overview of com.mysql.cj.xdevapi Classes Used
 The Java API can be found at https://dev.mysql.com/doc/dev/connector-j/8.0/?com/mysql/cj/xdevapi/package-summary.html
 
@@ -61,7 +62,16 @@ rtytryt
 ### Result and DocResult
 etretret
 
-### DbDoc and String
+### DbDoc, Parsers and Strings
+In Document Store we can store JSON objects using either a String representation of the JSON object, or a DbDoc (see [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)). The author's experience of using Strings to store documents suggests that this method is only suitable for simple JSON objects (i.e. not containing nested JSON objects or arrays). When we retrieve documents from the database, they are returned as DbDoc objects. It is instructive to see the representations of a JSON document returned to a client.
+
+markup: code()
+retyy
+trytryt
+ertret
+
+and retrieve JSON objects using the Java interface [DbDoc.java.](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/DbDoc.html). 
+
 JsonParser versus Gson
 
 ### Error Handling
