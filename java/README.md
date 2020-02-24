@@ -78,6 +78,86 @@ ResponseEntity<Object> getOutlet(@PathVariable String id) {
 }
 ```
 Secondly what the client receives:
+```json
+{
+    "_id": {
+        "string": "00005e224d500000000000000ee8"
+    },
+    "address": {
+        "building": {
+            "string": "10"
+        },
+        "coord": [
+            {
+                "integer": -74,
+                "bigDecimal": -74.16543
+            },
+            {
+                "integer": 50,
+                "bigDecimal": 50.676765
+            }
+        ],
+        "street": {
+            "string": "Top Street"
+        },
+        "zipcode": {
+            "string": "WA16 6HT"
+        }
+    },
+    "borough": {
+        "string": "Knutsford"
+    },
+    "cuisine": {
+        "string": "English"
+    },
+    "grades": [
+        {
+            "date": {
+                "$date": {
+                    "integer": 1667609309,
+                    "bigDecimal": 1582215574237
+                }
+            },
+            "grade": {
+                "string": "A"
+            },
+            "score": {
+                "integer": 10,
+                "bigDecimal": 10
+            }
+        },
+        {
+            "date": {
+                "$date": {
+                    "integer": 1666473320,
+                    "bigDecimal": 1582214438248
+                }
+            },
+            "grade": {
+                "string": "B"
+            },
+            "score": {
+                "integer": 8,
+                "bigDecimal": 8
+            }
+        }
+    ],
+    "name": {
+        "string": "The Eldon"
+    },
+    "restaurant_id": {
+        "string": "123456"
+    }
+}
+
+```
+The first point to note is that the result comes back as JSON. However, the values to the keys are not quite what we were expecting given they describe both the value and type. A further point to note is that numeric types are described both as integers and bigDecimals. In all cases the bigDecimal stores the correct value (i.e. the value that was entered). The integer is an 8 byte integer, and will represent the 8 least significant bytes of the bigDecimal if the value is greater than 8 bytes. If the bigDecimal value is a float type then the corresponding integer will only report the whole part. Some examples will help illustrate this:
+* Refer to the first date value in the JSON above, the bigDecimal value is 1582215574237: <br>
+1582215574237<sub>Dec</sub> = 1706365B2DD<sub>Hex</sub><br>
+the last eight bytes 6365B2DD<sub>Hex</sub> = 1667609309<sub>Dec</sub> which is the integer value shown.
+* Refer to the first value of the set of coordinates in the JSON above. the bigDecimal value is -74.16543. The mantissa is stripped from this value and the whole part is assigned to the integer (which is -74).
+
+Therefore, it is probably true to say that a DbDoc representation of an object is of limited value to a true client but may have value to Java application code.
 
 **Returning a String representation of a PersistedOutlet JSON document.** Firstly the code:
 ```java
@@ -90,7 +170,10 @@ ResponseEntity<Object> getOutlet(@PathVariable String id) {
 }
 ```
 Secondly what the client receives:
-
+```string
+{"_id":"00005e224d500000000000000ee8","address":{"building":"10","coord":[-74.16543,50.676765],"street":"Top Street","zipcode":"WA16 6HT"},"borough":"Knutsford","cuisine":"English","grades":[{"date":{"$date":1582215574237},"grade":"A","score":10},{"date":{"$date":1582214438248},"grade":"A","score":10}],"name":"The Eldon","restaurant_id":"123456"}
+```
+This is far more useful to most clients. The JSON is properly formed (albeit not pretty-printed). Note also that the numeric values are the bigDecimals rather than integers.
 **Using reflection to return a PersistedOutlet.** Firstly the code:
 ```java
 @GetMapping("/nycfood/outet/{id}"
