@@ -63,7 +63,9 @@ rtytryt
 etretret
 
 ### DbDoc, Parsers and Strings
-In Document Store we can store JSON objects using either a String representation of the JSON object, or as DbDoc representation (see [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)). The author's experience of using Strings to store documents suggests that this method is only suitable for simple JSON objects (i.e. not containing nested JSON objects or arrays). When we retrieve documents from the database, they are returned as DbDoc objects. These can be returned to the client via the Spring framework as is, or as a Java String, or as representative Java object. It is instructive to see each of these:
+In Document Store we can store JSON objects using either a String representation of the JSON object, or as DbDoc representation (see [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)).
+
+When we retrieve documents from the database, they are returned as DbDoc objects (as part of a DocResult object). These can then be returned to the client via the Spring framework as is, or as a Java String, or as representative Java object. It is instructive to see each of these:
 
 **Returning a DbDoc representation of a PersistedOutlet JSON document.** Firstly the code:
 ```java
