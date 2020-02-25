@@ -79,7 +79,7 @@ would need to be written as the follows in order to be correctly stored in the d
 String s = "{\"firstname\":\"Fred\",\"lastname\":\"Flintstone\",\"age\":40}";
 myCollection.add("s").execute();
 ```
-This is cumbersome to say the least and becomes very complicated once nested objects and arrays become involved. However, help is at hand:
+This is cumbersome and becomes very complicated once nested objects and arrays become involved. However, help is at hand:
 * Spring REST methods use POJOs as parameters.
 * Mapping and parsing classes are available. These can map a POJO to a JSON object, and then parse it to a DbDoc object.
    * The mapper we have used is Google's [Gson](https://javadoc.io/doc/com.google.code.gson/gson/latest/com.google.gson/com/google/gson/Gson.html).
@@ -104,6 +104,8 @@ myCollection.add(doc).execute();                  // and then add it to the data
 // myCollection.add(JsonParser.parseDoc(new Gson().toJson(person));
 ```
 Which is a whole lot easier and more maintainable than writing Strings.
+
+A further way of creating a DbDoc is to use the DbDocImpl builder and add key-pair-values (which may be strings, numbers, objects, etc.). Again, this is laborious and cumbersome and probably limited to edge use-cases. The [DbDoc](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/DbDoc.html) API documentation details how to use this method.
 
 When we retrieve documents from the database, they are returned as DbDoc objects (as part of a DocResult object). These can then be returned to the client via the Spring framework as is, or as a Java String, or as a reflected Java object. It is instructive to see each of these:
 
@@ -223,7 +225,7 @@ Care needs to be taken when returning Strings because it is very easy to return 
 
 **Using reflection to return a PersistedOutlet.** 
 
-Firstly the code:
+Firstly the code, note the use of Gson's fromJson() method to create a PersistedOutlet object:
 ```java
 @GetMapping("/nycfood/outet/{id}"
 ResponseEntity<Object> getOutlet(@PathVariable String id) {
