@@ -2,8 +2,9 @@
 ## Introduction
 First and foremostly this is not meant to be a masterclass in Java. This tutorial's purpose is to show how MySQL's CRUD interface to Document Store can be used with Java. However, in an attempt to provide some realism we have set the tutorial in the context of a REST application, and made use of industry standard frameworks. 
 
+The application is a restaurants listings application for New York City which is based on the data set provided here https://www.w3resource.com/mongodb-exercises/. The data is used unchanged. Potentially you could either build on the code provided in this repository to answer the exercises on the w3resource webpage or simply use MySQL shell's Javascript or Python interface and answer interactively. Either way you should be able to see that MySQL Document Store may serve as an alternative to MongoDB. 
+
 ### How the Application Works
-The application is a restaurants listings application for New York City which is based on the data set provided here https://www.w3resource.com/mongodb-exercises/. The data is used unchanged and potentially you could either build on the code provided in this repository to answer the exercises on the w3resource webpage or simply use MySQL shell's Javascript or Python interface and answer interactively. Either way you should be able to see that MySQL Document Store may serve as an alternative to MongoDB. 
 
 The application is started via a launcher class after which a controller waits for requests. When a request is received the underlying Spring framework routes the request to the required method in the controller and this method responds accordingly. If the request cannot be routed, then the underlying Spring framework will respond to the caller by sending a JSON document that will contain a timestamp, the error, a message providing detail about the error, an HTTP status code, and the URI path. If a request is routed and the method cannot find the resource or throws an exception then it will similarly send an error response.
 
@@ -32,13 +33,15 @@ Refer to the Maven Pom file for full details and versioning.
 ## Overview of Code ##
 For simplicity all the code is held within a single package: com.swd.nycfood.outlets.
 
-The code follows the Spring MVC pattern, and consists of:
+The code follows the Spring MVC pattern, and consists of the following classes:
 * A launcher class: OutletsApplication.java
 * A controller class: OutletsController.java
-* A series of POJOs:
-  * Input POJOs: Outlet.java, Grade.java (which has ODate.java)
-  * Output POJOs: PersistedOutlet.java, AbbrvOutlet.java, Cuisine.java, Borough.java
-  * Both Outlet.java and PersistedOutlet.java contain Address.java and an ArrayList of type Grade.java. 
+* A series of model classes implemented as POJOs:
+  * Inputs: Outlet.java, Grade.java (which contains ODate.java)
+  * Outputs: PersistedOutlet.java, AbbrvOutlet.java, Cuisine.java, Borough.java
+    * Grade.java has an ODate.java class
+    * Both Outlet.java and PersistedOutlet.java contain Address.java and an ArrayList of type Grade.java.
+* Views: there is no code associated with views. All the application does is return Java objects (output POJOs or Strings) as responses to the underlying Spring Framework, which does whatever it does prior to returning them to the client. 
 
 Outlet.java and PersistedOutlet.java are very similar classes the only differences being that the latter has an additional **\_id** member as well as the method, **void insertGrade(Grade newGrade)**. This is because Outlet.java is an input POJO and is only used for the creation of an Outlet document in the database, whereas PersistedOutlet is used for all subsequent operations. When an Outlet is inserted into the database (as a JSON document), the database provides it with a unique identifier: this identifier is both added to the JSON document and used as a primary key by the database. Given the identifier is now part of the persisted document in the database, when we retrieve the document from the database and map it into a Java object we need to make provision for this new field, hence, the additional **\_id** member in PersistedOutlet.java class. Some further points:
 
@@ -153,7 +156,7 @@ Secondly what the client receives:
 
 ```
 The first point to note is that the result comes back as JSON. However, the values to the keys are not quite what we were expecting given they describe both the value and type. A further point to note is that numeric types are described both as integers and bigDecimals. In all cases the bigDecimal stores the correct value (i.e. the value that was entered). The integer is an 8 byte integer, and will represent the 8 least significant bytes of the bigDecimal if the value is greater than 8 bytes. If the bigDecimal value is a float type then the corresponding integer will only report the whole part. Some examples will help illustrate this:
-* Refer to the first date value in the JSON above, the bigDecimal value is 1582215574237 and the integer value is 1667609309: <br>
+* Refer to the first date value in the JSON above, the bigDecimal value is 1582215574237 and the integer is 1667609309: <br>
 1582215574237<sub>Dec</sub> = 1706365B2DD<sub>Hex</sub><br>
 the last eight bytes 6365B2DD<sub>Hex</sub> = 1667609309<sub>Dec</sub> which is the integer value shown.
 * Refer to the first value of the set of coordinates in the JSON above. the bigDecimal value is -74.16543 and the integer value is -74. Given the whole part of the value does not exceed that which can be contained in 8 bytes, the mantissa is stripped from bigDecimal and the whole part is assigned to the integer (which is -74).
@@ -177,7 +180,7 @@ Secondly what the client receives:
 ```
 This is far more useful to most clients. The JSON is properly formed (albeit not pretty-printed). Note also that the numeric values are the bigDecimals rather than integers.
 
-Care needs to be taken when returning Strings because it is very easy to return a String that encapsulates a stringified JSON object. When this happens you will see lots of escape characters and as a consequence your client code may not be able to properly handle it. We discuss this later in the Code Walkthrough.
+Care needs to be taken when returning Strings because it is very easy to return a String that encapsulates a stringified JSON object. When this happens you will see lots of escape characters and as a consequence your client code may not be able to properly handle it. We discuss this later in the [Controller Walkthrough](#controller-walkthrough).
 
 **Using reflection to return a PersistedOutlet.** 
 Firstly the code:
@@ -233,3 +236,5 @@ etretret
 
 ## Test Data
 The test data comes from MongoDB's 
+
+## Controller Walkthrough
