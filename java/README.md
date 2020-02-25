@@ -66,7 +66,7 @@ rtytryt
 etretret
 
 ### DbDoc, Parsers and Strings
-In Document Store we can store JSON objects using either a String representation of the JSON object, or as a sequence of one or more DbDoc objects (see [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)). A String representation must be a properly quoted and escaped JSON string otherwise you may end up persisting a single String rather than a complex JSON object. For example the JSON object below
+In Document Store we can store JSON objects using either a String representation of each JSON object, or as a sequence of one or more (XDevAPI) DbDoc objects (see [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)). A String representation must be a properly quoted and escaped JSON string otherwise the call may fail or you may end up persisting a single String rather than a complex JSON object you were expecting. For example the JSON object below
 ```JSON
 {
   "firstname": "Fred",
@@ -80,15 +80,15 @@ String s = "{\"firstname\":\"Fred\",\"lastname\":\"Flintstone\",\"age\":40}";
 myCollection.add("s").execute();
 ```
 This is cumbersome to say the least and becomes very complicated once nested objects and arrays become involved. However, help is at hand:
-* Spring REST methods use POJOs as parameters
-* Mapping and parsing classes are available. These can map a POJO to a JSON object, and then parse it to a DbDoc object
+* Spring REST methods use POJOs as parameters.
+* Mapping and parsing classes are available. These can map a POJO to a JSON object, and then parse it to a DbDoc object.
    * The mapper we have used is Google's [Gson](https://javadoc.io/doc/com.google.code.gson/gson/latest/com.google.gson/com/google/gson/Gson.html).
    * The parser we have used is the XDevAPI's JsonParser. Some points to note:
-     * The mapper will produce a string depicting a JSON object, but it will not produced an escaped Json String. As mentioned earlier, the AddStatement requires a properly escaped Json String in order to correctly persist a JSON document. The code snippet below details both what Gson produces and what the AddStatement requires.
-     * The AddStatement can use a DbDoc object in lieu of a String. The JsonParser class has static methods that allow the creation of DbDoc objects from Java Strings.
-     * For whatever reason, the JsonParser class has been omitted from the API Documentation. However, the source code can be found on  [Github](https://github.com/mysql/mysql-connector-j/blob/release/8.0/src/main/user-impl/java/com/mysql/cj/xdevapi/JsonParser.java). Reading through the source code it is apparent that he JsonParser has a static method, **dbDoc parseDoc(StringReader reader)**, that will take an unescaped JsonString and parse it to produce a DbDoc (which we can then use to add a document to the database). From the source code it is also apparent we can use **DbDoc parseDoc(String jsonString)** to do the same. All this latter method does is create a new StringReader (passing the jsonString), and then calls dbDoc parseDoc(StringReader reader) passing the newly created StringReader.  
+     * The Gson mapper will produce a String depicting a JSON object, but it will not produced an escaped JSON String. As mentioned earlier, the AddStatement requires a properly escaped Json String in order to correctly persist a JSON document. The code snippet below details both what Gson produces and what the AddStatement requires.
+     * The AddStatement can use a DbDoc object in lieu of a String. The JsonParser class has static methods that allow the creation of DbDoc objects from JSON Strings.
+     * For whatever reason, the JsonParser class has been omitted from the XDevAPI's API Documentation. However, the source code can be found on [Github](https://github.com/mysql/mysql-connector-j/blob/release/8.0/src/main/user-impl/java/com/mysql/cj/xdevapi/JsonParser.java). Reading through the source code it is apparent that the JsonParser has a static method, **dbDoc parseDoc(String jsonString)**, that will take an unescaped JsonString and parse it to produce a DbDoc.
 
-So assuming we have a POJO we can use Gson and JsonParser as follows:
+The following code snippet details how we can use Gson and JsonParser to properly persist a POJO:
 ```java
 // Assume we have a POJO called person with three fields: 
 //     String firstname = "Fred"; String lastname = "Flintstone"' int age = 40;
@@ -99,10 +99,13 @@ System.out.println(jsonString);                   // Prints: {"firstname": "Fred
                                                   //    "{\"firstname\":\"Fred\",\"lastname\":\"Flintstone\",\"age\":40}"
 DbDoc doc = JsonParser.parseDoc(jsonString);      // ...but we can create a DbDoc from the String provided by Gson 
 myCollection.add(doc).execute();                  // and then add it to the database
+
+// Of course we could condense this code to a single line:
+// myCollection.add(JsonParser.parseDoc(new Gson().toJson(person));
 ```
 Which is a whole lot easier and more maintainable than writing Strings.
 
-When we retrieve documents from the database, they are returned as DbDoc objects (as part of a DocResult object). These can then be returned to the client via the Spring framework as is, or as a Java String, or as representative Java object. It is instructive to see each of these:
+When we retrieve documents from the database, they are returned as DbDoc objects (as part of a DocResult object). These can then be returned to the client via the Spring framework as is, or as a Java String, or as a reflected Java object. It is instructive to see each of these:
 
 **Returning a DbDoc representation of a PersistedOutlet JSON document.** 
 
@@ -199,6 +202,7 @@ the last eight bytes 6365B2DD<sub>Hex</sub> = 1667609309<sub>Dec</sub> which is 
 Therefore, it is probably true to say that a DbDoc representation of an object is of limited value to a true client but may have value to Java application code.
 
 **Returning a String representation of a PersistedOutlet JSON document.** 
+
 Firstly the code:
 ```java
 @GetMapping("/nycfood/outet/{id}"
@@ -218,6 +222,7 @@ This is far more useful to most clients. The JSON is properly formed (albeit not
 Care needs to be taken when returning Strings because it is very easy to return a String that encapsulates a stringified JSON object. When this happens you will see lots of escape characters and as a consequence your client code may not be able to properly handle it. We discuss this later in the [Controller Walkthrough](#controller-walkthrough).
 
 **Using reflection to return a PersistedOutlet.** 
+
 Firstly the code:
 ```java
 @GetMapping("/nycfood/outet/{id}"
