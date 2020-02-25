@@ -109,7 +109,7 @@ A further way of creating a DbDoc is to use the DbDocImpl builder and add key-pa
 
 When we retrieve documents from the database, they are returned as DbDoc objects (as part of a DocResult object). These can then be returned to the client via the Spring framework as is, or as a Java String, or as a reflected Java object. It is instructive to see each of these:
 
-**Returning a DbDoc representation of a PersistedOutlet JSON document.** 
+**Returning a DbDoc representation of a persisted JSON document.** 
 
 Firstly the code:
 ```java
@@ -203,7 +203,7 @@ the last eight bytes 6365B2DD<sub>Hex</sub> = 1667609309<sub>Dec</sub> which is 
 
 Therefore, it is probably true to say that a DbDoc representation of an object is of limited value to a true client but may have value to Java application code.
 
-**Returning a String representation of a PersistedOutlet JSON document.** 
+**Returning a String representation of a persisted JSON document.** 
 
 Firstly the code:
 ```java
@@ -223,7 +223,7 @@ This is far more useful to most clients. The JSON is properly formed (albeit not
 
 Care needs to be taken when returning Strings because it is very easy to return a String that encapsulates a stringified JSON object. When this happens you will see lots of escape characters and as a consequence your client code may not be able to properly handle it. We discuss this later in the [Controller Walkthrough](#controller-walkthrough).
 
-**Using reflection to return a PersistedOutlet.** 
+**Using reflection to return a Java object representation of a persisted JSON document.** 
 
 Firstly the code, note the use of Gson's fromJson() method to create a PersistedOutlet object:
 ```java
