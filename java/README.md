@@ -105,7 +105,7 @@ myCollection.add(doc).execute();                  // and then add it to the data
 ```
 Which is a whole lot easier and more maintainable than writing Strings.
 
-A further way of creating a DbDoc is to use the DbDocImpl builder and add key-pair-values (which may be strings, numbers, objects, etc.). Again, this is laborious and cumbersome and probably limited to edge use-cases. The [DbDoc](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/DbDoc.html) API documentation details how to use this method.
+A further way of creating a DbDoc is to use the DbDocImpl builder and add JsonValue objects (e.g. JsonString, JsonNumber, JsonLiteral, JsonArray). The [DbDoc](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/DbDoc.html) API documentation details how to use this method. Again, this looks cumbersome when compared to using Gson and JsonParser.
 
 When we retrieve documents from the database, they are returned as DbDoc objects (as part of a DocResult object). These can then be returned to the client via the Spring framework as is, or as a Java String, or as a reflected Java object. It is instructive to see each of these:
 
@@ -195,13 +195,13 @@ Secondly what the client receives:
 }
 
 ```
-The first point to note is that the result comes back as JSON. However, the values to the keys are not quite what we were expecting given they describe both the value and type. A further point to note is that numeric types are described both as integers and bigDecimals. In all cases the bigDecimal stores the correct value (i.e. the value that was entered). The integer is an 8 byte integer, and will represent the 8 least significant bytes of the bigDecimal if the value is greater than 8 bytes. If the bigDecimal value is a float type then the corresponding integer will only report the whole part. Some examples will help illustrate this:
+The first point to note is that the result comes back as JSON. However, the values to the keys may not be quite what we were expecting given they describe JsonValues rather than Strings or Numbers, etc. A further point to note is that numeric types are described both as integers and bigDecimals. In all cases the bigDecimal stores the correct value (i.e. the value that was entered). The integer is an 8 byte integer, and will represent the 8 least significant bytes of the bigDecimal if the value is greater than 8 bytes. If the bigDecimal value is a float type then the corresponding integer will only report the whole part. Some examples will help illustrate this:
 * Refer to the first date value in the JSON above, the bigDecimal value is 1582215574237 and the integer is 1667609309: <br>
 1582215574237<sub>Dec</sub> = 1706365B2DD<sub>Hex</sub><br>
 the last eight bytes 6365B2DD<sub>Hex</sub> = 1667609309<sub>Dec</sub> which is the integer value shown.
 * Refer to the first value of the set of coordinates in the JSON above. the bigDecimal value is -74.16543 and the integer value is -74. Given the whole part of the value does not exceed that which can be contained in 8 bytes, the mantissa is stripped from bigDecimal and the whole part is assigned to the integer (which is -74).
 
-Therefore, it is probably true to say that a DbDoc representation of an object is of limited value to a true client but may have value to Java application code.
+Therefore, it is probably true to say that a raw DbDoc is of limited value to an end client such as a browser. However, the immediate application code can make good use of it.
 
 **Returning a String representation of a persisted JSON document.** 
 
@@ -225,7 +225,7 @@ Care needs to be taken when returning Strings because it is very easy to return 
 
 **Using reflection to return a Java object representation of a persisted JSON document.** 
 
-Firstly the code, note the use of Gson's fromJson() method to create a PersistedOutlet object:
+Firstly the code, note the use of Gson's fromJson() method to create a PersistedOutlet object (which is a POJO):
 ```java
 @GetMapping("/nycfood/outet/{id}"
 ResponseEntity<PersistedOutlet> getOutlet(@PathVariable String id) {
@@ -271,9 +271,9 @@ Secondly what the client receives:
     "restaurant_id": "123456"
 }
 ```
-The client receives a JSON object. In the case of a Postman client or client capable of pretty printing, then it will format the object as shown, otherwise it will be printed as per the string example above.
+The Spring framework converts the returned Java object to a pretty-printable string and sends it onwards to the client. In the case of a client capable of pretty printing (e.g. Postman), then it will be printed as shown above, otherwise it will be printed as per the previous string example.
 
-In summary when retrieving documents from the database they will always be of type DbDoc. A DbDoc is a map which describes the document down to a level of the element types. It is envisaged that this will only be useful to the application in a few edge cases, and that typically you will use the DbDoc.toString() method to extract a string representation of a JSON object. You can then either return that a String object to the end client, or convert into into a Java object that reflects its true type. The advantage of creating a Java object is that it is very easy to update the object using getter and setter objects. Compare this to updating a DbDoc object where you have to specify document paths to keys, etc. If you are using Spring then you can simply return Java objects to the end client and Spring will do all the necessary conversions. If you not using Spring or a similar framework then you will probably be constrained to always returning a String representation. 
+In summary, when retrieving documents from the database they will always be of type DbDoc. A DbDoc is a map which describes the document in terms of JsonValue objects and (potentially) other nested DbDoc objects (which will also be formed of JsonValue objects). Typically you will not return the DbDoc object directly to the end client, but will return either a String representation of it (using the DbDoc objects toString() method) or reflect it into a truly representative Java object. By creating a reflected Java object you open the door to performing more complex processing on it, e.g. incorporating it into other Java objects, querying and updating it via its getter and setter methods, etc. Of course you can always return such an object to the end client letting Spring do the necessary conversions to form it into a coherent JSON string.
 
 ### Error Handling
 etretret
@@ -332,5 +332,60 @@ The methods in the controller class all need to access the database in order to 
 
 At time of construction we create an instance of Gson called mapper. According to Google's documentation this is a thread-safe class. Therefore, in order to avoid the overhead of repeated construction and garbage collection in the methods, we have create a single instance and made it available to all methods of Outletscontroller (note: Spring controllers are singletons: there will be just one instance of OutletsController per application instantiation).
 
-The other task of the constructor is to create a Session Connection Pool. 
+The other task of the constructor is to create a Session Connection Pool. The code for the Connection Pool has been lifted directly from the [XDevAPI User Guide](https://dev.mysql.com/doc/x-devapi-userguide/en/connecting-connection-pool.html). It should go without saying that in production code you would not hard-code the connection URL, and would load usernames and passwords from secure locations. You would probably also read in values for the pool from a configuration file. The values configure the pool in the following manner:
+* enabled: **true** meaning use the pool; if **false** is entered then pooling will not be used, you will just create and use connections as required.
+* maxSize: the maximum number of connections the pool can grow to.
+* maxIdleTime: The maximum number of milliseconds a connection is allowed to idle in the queue before being closed. A zero value means infinite.
+* queueTimeout: The maximum number of milliseconds a request is allowed to wait for a connection to become available. A zero value means infinite.
 
+### getBoroughs()
+This method provides a list of the boroughs of New York that have food outlets registered in the application. The list only contains one entry for each borough, and the boroughs are listed alphabetically.
+```java
+@GetMapping("/nycfood/boroughs")
+ResponseEntity<String> getBoroughs() { 
+    Session sess = cli.getSession();
+    Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
+    DocResult dr = col.find().fields("borough AS borough").groupBy("borough").sort("borough").execute();
+    String boroughs = dr.fetchAll().toString();
+    sess.close();
+    return new ResponseEntity<>(boroughs,HttpStatus.OK);
+} 
+```
+The first line of the method simply gets a session connection from the pool, cli, that was created at the time of the OutletController's construction.
+
+The second line gets a Collection object that is effectively our handle on the database. Note that we chain the getSchema() and getCollection() methods.
+
+The third line creates a [FindStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/FindStatement.html) and executes it. Note how the methods are chained:
+* **.find()** - we are querying all the documents in the collection
+* **.fields("borough AS borough")** - we are only interested in the value for the key, "borough" in each document
+* **.groupBy("borough")** - we only want unique values (i.e. no duplicates of a borough name in the output)
+* **.sort("borough")** - sort alphabetically in ascending order
+  *  to sort descending we would have written sort("borough desc")
+
+The above methods effectively build a query for the database to execute, and we execute it by appending **.execute()** to the chain. Note: the order in which methods are chained is both critical and logical (i.e. you would not normally do a groupBy before a sort). The [XDevAPI User Guide]https://dev.mysql.com/doc/x-devapi-userguide/en/crud-ebnf-collection-crud-functions.html details method chaining and ordering.
+
+Perhaps the most interesting of the chained methods is the fields() method and its use of the String projection, "borough AS borough". This projection instructs the database to only retrieve the "borough" value and then store this value in the resulting dbDoc using the key, "borough". If we wanted to complicate things we could have used a different projection, for example col.find().fields("borough AS region")..., and in this case instead of "borough" being a key in the DbDoc we would see, "region".
+
+The dr.fetchAll() call returns a List<T> where type T will be DbDoc. In this case the DbDoc objects will look like this:
+```Java
+ {
+     "borough": {               // the key
+         "string": "Bronx"      // the JsonValue which is of type JsonString
+     }
+ }
+ ```
+When the toString() method of a List<T> is called the returned String will be created by calling the toString() methods of each instance of type T in the list. Given T is a DbDoc, then for each dbDoc in the List its toString() method will be printed for each dbDoc in the list its key and the value of its JsonValue. For the example above this would result in {"borough": "Bronx"}.
+### getCuisines()
+This method provides a list of cuisines available from the food outlets registered in the application. The list only contains one entry for each cuisine. Note that the output is a JSON array, and that array only contains values. It does not contain any keys. This may be considered an improvement over the code in getBoroughs() because it's really quite boring reading the same key name for each value.
+```java
+@GetMapping("/nycfood/cuisines")
+ResponseEntity<List<String>> getCuisines() {
+    List<String> cuisineList = new ArrayList<>(); 
+    Session sess = cli.getSession();
+    Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
+    DocResult dr = col.find().fields("cuisine AS cuisine").groupBy("cuisine").sort("cuisine desc").execute();
+    dr.forEach(dbDoc -> cuisineList.add(mapper.fromJson(dbDoc.get("cuisine").toString(),String.class)));
+    sess.close();
+    return new ResponseEntity<>(cuisineList,HttpStatus.OK);
+} 
+```
