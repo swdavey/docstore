@@ -114,7 +114,7 @@ When we retrieve documents from the database, they are returned as DbDoc objects
 Firstly the code:
 ```java
 @GetMapping("/nycfood/outet/{id}"
-ResponseEntity<Object> getOutlet(@PathVariable String id) {
+ResponseEntity<DbDoc> getOutlet(@PathVariable String id) {
     ...
     DocResult dr = col.find("_id = :param).bind("param",id).execute();
     DbDoc doc = dr.fetchOne();
@@ -208,7 +208,7 @@ Therefore, it is probably true to say that a DbDoc representation of an object i
 Firstly the code:
 ```java
 @GetMapping("/nycfood/outet/{id}"
-ResponseEntity<Object> getOutlet(@PathVariable String id) {
+ResponseEntity<String> getOutlet(@PathVariable String id) {
     ...
     DocResult dr = col.find("_id = :param).bind("param",id).execute();
     DbDoc doc = dr.fetchOne();
@@ -228,7 +228,7 @@ Care needs to be taken when returning Strings because it is very easy to return 
 Firstly the code, note the use of Gson's fromJson() method to create a PersistedOutlet object:
 ```java
 @GetMapping("/nycfood/outet/{id}"
-ResponseEntity<Object> getOutlet(@PathVariable String id) {
+ResponseEntity<PersistedOutlet> getOutlet(@PathVariable String id) {
     ...
     DocResult dr = col.find("_id = :param).bind("param",id).execute();
     DbDoc doc = dr.fetchOne();
@@ -282,3 +282,55 @@ etretret
 The test data comes from MongoDB's 
 
 ## Controller Walkthrough
+
+Blah - detail why we are not talking about POJOs, detail what we are providing in terms of the API
+
+### OutletsController Class and Constructor
+```java
+package com.swd.nycfood.outlets;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.server.ResponseStatusException;
+import com.google.gson.Gson;
+import com.mysql.cj.xdevapi.*;
+
+@RestController
+class OutletsController {
+
+    private static final String SCHEMA = "nycfood";
+    private static final String COLLECTION = "outlets";
+    private Gson mapper = new Gson();
+    private Client cli = null;
+
+    OutletsController() {
+        String cnxUrl = "mysqlx://localhost:33060/nycfood?user=root&password=<Pa55word>";
+        String pool =  "{\"pooling\":{\"enabled\":true, \"maxSize\":25,\"maxIdleTime\":30000, \"queueTimeout\":10000}}"; 
+        cli = new ClientFactory().getClient(cnxUrl,pool);
+    }
+    @GetMapping("/nycfood/boroughs") ResponseEntity<String> getBoroughs() {...}
+    @GetMapping("/nycfood/cuisines") ResponseEntity<List<String>> getCuisines() {...}
+    @GetMapping("/nycfood/outlets") ResponseEntity<List<String>> getAllOutlets() {...}
+    @GetMapping("/nycfood/outlet/{id}") ResponseEntity<String> getOutlet(@PathVariable String id) {...}
+    @DeleteMapping("/nycfood/outlet/{id}") ResponseEntity<Result> deleteOutlet(@PathVariable String id) {...}
+    @PatchMapping("/nycfood/outlet/{id}") ResponseEntity<Result> gradeOutlet(@RequestBody Grade newGrade, @PathVariable String id) {...}
+    @PutMapping("/nycfood/outlet/{id}") ResponseEntity<Result> replaceOutlet(@RequestBody Outlet replacement, @PathVariable String id) {...}
+    @PostMapping("nycfood/outlet") ResponseEntity<Result> createOutlet(@RequestBody Outlet newOutlet) {...}
+}
+```
+The OutletsController class uses the Spring framework to route incoming requests to its methods. It achieves this using annotations: 
+* @RestController to identify where REST requests should be sent
+* Mapping verbs (@GetMapping, etc.) to its methods to handle the received requests
+* @PathVariable and @RequestBody to indicate parameters passed as part of a REST request. 
+We use further classes from the Spring framework's http and web packages to allow the methods to respond to requests in a Spring-like manner. 
+
+The methods in the controller class all need to access the database in order to create, read, update and delete JSON documents. Hence we import the XdevAPI connector classes. We also import Gson because we use this class as a convenient way to map between Java and JSON objects.
+
+At time of construction we create an instance of Gson called mapper. According to Google's documentation this is a thread-safe class. Therefore, in order to avoid the overhead of repeated construction and garbage collection in the methods, we have create a single instance and made it available to all methods of Outletscontroller (note: Spring controllers are singletons: there will be just one instance of OutletsController per application instantiation).
+
+The other task of the constructor is to create a Session Connection Pool. 
+
