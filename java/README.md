@@ -1,6 +1,6 @@
 # Java DocStore Tutorial
 ## Introduction
-First and foremostly this is not meant to be a masterclass in Java. This tutorial's purpose is to show how MySQL's CRUD interface to Document Store can be used with Java. However, in an attempt to provide some realism we have set the tutorial in the context of a REST application, and made use of industry standard frameworks. 
+First and foremostly this is not meant to be a masterclass in Java. This tutorial's purpose is to show how MySQL's CRUD interface for Document Store can be used with Java. However, in an attempt to provide some realism we have set the tutorial in the context of a REST application, and made use of industry standard frameworks. 
 
 The application is a restaurants listings application for New York City which is based on the data set provided here https://www.w3resource.com/mongodb-exercises/. The data is used unchanged. Potentially you could either build on the code provided in this repository to answer the exercises on the w3resource webpage or simply use MySQL shell's Javascript or Python interface and answer interactively. Either way you should be able to see that MySQL Document Store may serve as an alternative to MongoDB. 
 
@@ -66,7 +66,9 @@ rtytryt
 etretret
 
 ### DbDoc, Parsers and Strings
-In Document Store we can store JSON objects using either a String representation of each JSON object, or as a sequence of one or more (XDevAPI) DbDoc objects (see [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)). A String representation must be a properly quoted and escaped JSON string otherwise the call may fail or you may end up persisting a single String rather than a complex JSON object you were expecting. For example the JSON object below
+In Document Store we typically persist JSON objects using the [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)). The JSON object(s) to be persisted must either be a String representation of each JSON object, or (XDevAPI) [DbDoc]((https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)) object representations, or a Map representation. 
+
+A String representation must be a properly quoted and escaped JSON string otherwise the call may fail or you may end up persisting a single String rather than a complex JSON object you were expecting. For example the JSON object below
 ```JSON
 {
   "firstname": "Fred",
