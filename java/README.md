@@ -66,9 +66,9 @@ rtytryt
 etretret
 
 ### DbDoc, Parsers and Strings
-In Document Store we typically persist JSON objects using the [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)). The JSON object(s) to be persisted must either be a String representation of each JSON object, or (XDevAPI) [DbDoc]((https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)) object representations, or a Map representation. 
+In Document Store we typically persist JSON objects using the [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)). The JSON object(s) to be persisted must either be a String representation of each JSON object, or (XDevAPI) [DbDoc]((https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/DbDoc.html)) object representations, or Map representations. 
 
-A String representation must be a properly quoted and escaped JSON string otherwise the call may fail or you may end up persisting a single String rather than a complex JSON object you were expecting. For example the JSON object below
+A String representation must be a properly quoted and escaped JSON string otherwise the call may either fail or you may end up persisting a single String rather than the complex JSON object you were expecting. For example the JSON object below
 ```JSON
 {
   "firstname": "Fred",
@@ -353,22 +353,22 @@ ResponseEntity<String> getBoroughs() {
     return new ResponseEntity<>(boroughs,HttpStatus.OK);
 } 
 ```
-The first line of the method simply gets a session connection from the pool, cli, that was created at the time of the OutletController's construction.
+The first line of the method simply gets a session connection from the pool, **cli**, that was created at the time of the OutletController's construction.
 
-The second line gets a Collection object that is effectively our handle on the database. Note that we chain the getSchema() and getCollection() methods.
+The second line gets a Collection object, **col**, that is effectively our handle on the database. Note that we chain the getSchema() and getCollection() methods.
 
-The third line creates a [FindStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/FindStatement.html) and executes it. Note how the methods are chained:
+The third line creates a [FindStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/FindStatement.html) and executes it:
 * **.find()** - we are querying all the documents in the collection
 * **.fields("borough AS borough")** - we are only interested in the value for the key, "borough" in each document
 * **.groupBy("borough")** - we only want unique values (i.e. no duplicates of a borough name in the output)
-* **.sort("borough")** - sort alphabetically in ascending order
+* **.sort("borough")** - we want to sort alphabetically in ascending order
   *  to sort descending we would have written sort("borough desc")
 
-The above methods effectively build a query for the database to execute, and we execute it by appending **.execute()** to the chain. Note: the order in which methods are chained is both critical and logical (i.e. you would not normally do a groupBy before a sort). The [XDevAPI User Guide]https://dev.mysql.com/doc/x-devapi-userguide/en/crud-ebnf-collection-crud-functions.html details method chaining and ordering.
+As can be seen The above methods effectively build a query for the database to execute, and we execute it by appending **.execute()** to the chain. The order in which methods are chained is both critical and logical. The [XDevAPI User Guide]https://dev.mysql.com/doc/x-devapi-userguide/en/crud-ebnf-collection-crud-functions.html details method chaining and ordering.
 
-Perhaps the most interesting of the chained methods is the fields() method and its use of the String projection, "borough AS borough". This projection instructs the database to only retrieve the "borough" value and then store this value in the resulting dbDoc using the key, "borough". If we wanted to complicate things we could have used a different projection, for example col.find().fields("borough AS region")..., and in this case instead of "borough" being a key in the DbDoc we would see, "region".
+Perhaps the most interesting of the chained methods is the fields() method and its use of the String Projection, "borough AS borough". This projection instructs the database to only retrieve the "borough" value and then store this value in the resulting dbDoc using the key, "borough". If we wanted to complicate things we could have used a different projection, for example col.find().fields("borough AS region")..., and in this case instead of "borough" being a key in the DbDoc we would see, "region".
 
-The dr.fetchAll() call returns a List<T> where type T will be DbDoc. In this case the DbDoc objects will look like this:
+The dr.fetchAll() call returns a List<T> where type T will be DbDoc. In this case individual DbDoc objects will look like this:
 ```Java
  {
      "borough": {               // the key
@@ -376,7 +376,28 @@ The dr.fetchAll() call returns a List<T> where type T will be DbDoc. In this cas
      }
  }
  ```
-When the toString() method of a List<T> is called the returned String will be created by calling the toString() methods of each instance of type T in the list. Given T is a DbDoc, then for each dbDoc in the List its toString() method will be printed for each dbDoc in the list its key and the value of its JsonValue. For the example above this would result in {"borough": "Bronx"}.
+When the toString() method of a List<T> is called the returned String will be created by calling the toString() methods of each instance of type T in the list. Given T is a DbDoc, then for each dbDoc in the List its toString() method will be printed for each dbDoc in the list its key and the toString() value of its JsonValue. For the example above this would result in {"borough": "Bronx"}.
+ 
+The final two lines in the method, close the session (which allows the pool to reset and reuse the connection) and return the list of boroughs. Note that we don't simply return a list of boroughs but use Spring's ResponseEntity in order to provide additional information for the client in the form of an HTTP status code. For details of its use please refer to this [article](https://www.baeldung.com/spring-response-entity).
+
+The (pretty-printed) output from getBoroughs() will look like this:
+```JSON
+[
+    {
+        "borough": "Bronx"
+    },{
+        "borough": "Brooklyn"
+    },{
+        "borough": "Manhattan"
+    },{
+        "borough": "Queens"
+    },{
+        "borough": "Staten Island"
+    }
+]
+```
+Given we are only returning boroughs it may be more helpful just to return the values in an array (e.g. \["Bronx","Brooklyn",...,"Staten Island"\] ) rather than as individual JSON objects. getCusines() tackles this problem.
+
 ### getCuisines()
 This method provides a list of cuisines available from the food outlets registered in the application. The list only contains one entry for each cuisine. Note that the output is a JSON array, and that array only contains values. It does not contain any keys. This may be considered an improvement over the code in getBoroughs() because it's really quite boring reading the same key name for each value.
 ```java
@@ -385,9 +406,22 @@ ResponseEntity<List<String>> getCuisines() {
     List<String> cuisineList = new ArrayList<>(); 
     Session sess = cli.getSession();
     Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
-    DocResult dr = col.find().fields("cuisine AS cuisine").groupBy("cuisine").sort("cuisine desc").execute();
+    DocResult dr = col.find().fields("cuisine AS cuisine").groupBy("cuisine").sort("cuisine").execute();
     dr.forEach(dbDoc -> cuisineList.add(mapper.fromJson(dbDoc.get("cuisine").toString(),String.class)));
     sess.close();
     return new ResponseEntity<>(cuisineList,HttpStatus.OK);
 } 
 ```
+The code in getCuisines() is very similar to that of getBoroughs() indeed the only differences of substance is the creation of a List to store the outputs from the database (as opposed to using a simple String), and the processing of the DocResult, dr.forEach(...).
+
+The dr.forEach() allows us to iterate through the list of DbDoc objects in the DocResult. You will note that the body of the loop uses reflection to create a String which is then added to the List. This does not seem entirely intuitive. This seems the natural thing to do:
+```java
+    dr.forEach(dbDoc -> cuisineList.add(dbDoc.get("cuisine"));
+```
+However, that will return a JsonValue, e.g. { "String" : "Afghan" }, rather than the required String. We could of course append a toString() method:
+```java
+    dr.forEach(dbDoc -> cuisineList.add(dbDoc.get("cuisine").toString());
+```
+...but that will result in an escaped jsonString being added to the array, e.g. "\[\"Afghan\",...]". To overcome this, we can simply use Gson (remember mapper is the instance of Gson we created at the time of the OutletsController's construction). In this case we use Gson to create a Java object from an escaped jsonString. To do this we use Gson's fromJson() method. Thi   
+
+### getAllOutlets()
