@@ -491,9 +491,50 @@ To make this method more useful to end users we could include the location coord
 Another change we could make is to limit a search to a borough (which would also obviate the need to print out the borough entry). To do this we would put a search condition in the find() method. For example:
 ```java
         ...
-        DocResult dr = col.find('borough = "Brooklyn"').fields("_id AS id","address.coord as coords", "name AS name","cuisine AS cuisine").sort("borough","cuisine","name").execute();
+        DocResult dr = col.find('borough = "Brooklyn"').fields("_id AS id","address.coord AS coords", "name AS name","cuisine AS cuisine").sort("borough","cuisine","name").execute();
         ...
 ```
 In the above example we have used literals, but typically you would use bind variables. These are discussed in the next method.
 
 ### getOutlet(@PathVariable String id)
+This method simply returns all the information on a particular outlet identified by the path variable, id. This id is compared to each document's \_id.
+```java
+    @GetMapping("/nycfood/outlet/{id}")
+    ResponseEntity<String> getOutlet(@PathVariable String id) { 
+        Session sess = cli.getSession();
+        Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
+        DocResult dr = col.find("_id = :param").bind("param",id).execute();
+        if (dr.count() != 1) {
+            sess.close();
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,"No matching document for id on path.");
+        } 
+        String outlet = dr.fetchOne().toString();
+        sess.close();
+        return new ResponseEntity<>(outlet,HttpStatus.OK);
+    }
+```
+Again, the code for this method is very similar to the previously described methods. The only differences are: the use of search criteria in the find() method; the use of a bind variable to improve the efficiency of the call; some simple error checking, and the use of fetchOne(). 
+
+A bind variable is a placeholder in a statement that will be replaced with a value. The purpose of a bind variable is to improve database performance. The first time a statement is executed the database will create an execution plan taking into account that a variables will need to be inserted for each *bind* when the statement is executed. Subsequent executions re-use this plan saving the overhead of re-creating it. 
+
+The find() method has a search expression within it that checks for equality between the collection's Document IDs and a bound id variable called **:param** (we could have called it anything, but it must be preceded by a colon (**:**) ). The value to be inserted into the bind variable is given by the bind() method. Because we can have multiple bind variables we need to be able to map them correctly, and as a consequence the bind() method's first parameter will use the same name as that in the find() method less its leading colon (**:**); the second parameter will be the variable to be inserted. It is well worth reading the XdevAPI Guide's section on [Parameter Binding] from start to finish in order to understand its subtleties and language specifics.
+
+Given we are searching on \_id and we know that these must be unique, we can expect either 0 or 1 DbDoc objects to be returned to the DocResult (i.e. we will either find it in the collection of Documents or not). As such we test for the number of DbDoc objects and if the count is not one, we close the session and throw an exception. If we get past the if statement then we know we have precisely one DbDoc available and that this will represent the Document we were searching for. Consequently, we use the DocResult objects fetchOne() method to retrieve the DbDoc and then call the DbDoc objects toString() method as we have done in the previous sections.
+
+### deleteOutlet(@PathVariable String id)
+If the passed id matches a Document's \_id then that Document will be deleted. If no match is made a message to that effect is returned. 
+```java
+    @DeleteMapping("/nycfood/outlet/{id}")
+    ResponseEntity<Result> deleteOutlet(@PathVariable String id) {
+        Session sess = cli.getSession();
+        Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
+        Result result = col.remove("_id = :param").bind("param",id).execute();
+        sess.close();
+        if (result.getAffectedItemsCount() != 1) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,"No matching document for id on path.");
+        }
+        return new ResponseEntity<>(result,HttpStatus.OK);
+    }
+```
+
+
