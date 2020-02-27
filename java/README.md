@@ -68,38 +68,30 @@ The code follows the Spring MVC pattern, and consists of the following classes:
 * A launcher class: OutletsApplication.java
 * A controller class: OutletsController.java
 * A series of model classes implemented as POJOs:
-  * Inputs: Outlet.java, Grade.java (which contains ODate.java)
-  * Outputs: PersistedOutlet.java, AbbrvOutlet.java, Cuisine.java, Borough.java
+  * Outlet.java, Grade.java (which contains ODate.java)
     * Grade.java has an ODate.java class
-    * Both Outlet.java and PersistedOutlet.java contain Address.java and an ArrayList of type Grade.java.
+    * Outlet.java has an Address.java class and an ArrayList of type Grade.java.
 * Views: there is no code associated with views. All the application does is return Java objects (output POJOs or Strings) as responses to the underlying Spring Framework, which does whatever it does prior to returning them to the client. 
 
-Outlet.java and PersistedOutlet.java are very similar classes the only differences being that the latter has an additional **\_id** member as well as the method, **void insertGrade(Grade newGrade)**. This is because Outlet.java is an input POJO and is only used for the creation of an Outlet document in the database, whereas PersistedOutlet is used for all subsequent operations. When an Outlet is inserted into the database (as a JSON document), the database provides it with a unique identifier: this identifier is both added to the JSON document and used as a primary key by the database. Given the identifier is now part of the persisted document in the database, when we retrieve the document from the database and map it into a Java object we need to make provision for this new field, hence, the additional **\_id** member in PersistedOutlet.java class. Some further points:
-
-* Instead of allowing the database to provide a unique identifier for the Outlet document, we could have provided one from our application code. However, our code would have to guarantee its uniqueness. This is not too difficult to do with a single connection, but may get more complex when hundreds of users are attempting to concurrrently add documents. As such, it was decided to leave this task to the database (because we know it does it correctly and efficiently).
-* Inheritance could have been used such that PersistedOutlet extends Outlet. However, inheritance seems to work against the intentions of Lombok: if it were used we would have ended up writing a constructor for PersistedOutlet. 
-
-Returning to the other difference, the **void insertGrade(Grade newGrade)** method. The reason this is present in PersistedOutlet.java and not Outlet.java is due to a simple design decision: when an Outlet document is first created there will be no grading; grading is an operation subsequent to creation and therefore only operate on PersistedOutlet objects.
-
-The input POJOs, Outlet.java, Grade.java and classes they include all use the Lombok annotation @NonNull on their members (where there members are not set at time of construction). This ensures that all keys have values otherwise Spring will return an error response. However, we have not gone as far as proper type and bounds checking: the point of this exercise is to demonstrate Document Store rather than write a perfect Java application. 
-
-As mentioned previously all POJOs with the exception of ODate use the Lombok @Data annotation which implements their constructor, getter, setter and toString methods. ODate cannot use @Data due to a Lombok [issue/bug](#frameworks-and-libraries-used).
-
-The output POJOs are nothing more than convenience classes such that Spring can deal with representative Java objects rather than generic DbDoc objects representations of JSON objects. For more details see [DbDoc, Parsers and String](#dbdoc,-parsers-and-strings) below.
-
-## Overview of com.mysql.cj.xdevapi Classes Used
+## Background Notes Regarding the Use of com.mysql.cj.xdevapi Classes and Interfaces
 The Java API can be found at https://dev.mysql.com/doc/dev/connector-j/8.0/?com/mysql/cj/xdevapi/package-summary.html
 
 ### Schema and Collection
 rtytryt
 
+### Statements Used
+Only the Document based CRUD interface is used: the AddStatement, FindStatement, ModifyStatement and RemoveStatement. These statements form part of the Collection class' interface. Their use is best explained by example - see the Code Walkthrough below.
+
+The relational CRUD interface is Table based and is not required for this application.  
+
 ### Result and DocResult
-etretret
+A Result object is returned when Add, Modify and RemoveStatements are executed.
+A DocResult object is returned when FindStatements are executed. A DocResult object will contain zero, one or more DbDoc objects. These are Java object representations of JSON documents persisted in the database. Additionally a DocResult object will detail the count of returned DbDoc objects, the number of warnings/errors and descriptions of any warnings/errors.
 
 ### DbDoc, Parsers and Strings
-In Document Store we typically persist JSON objects using the [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)). The JSON object(s) to be persisted must either be a String representation of each JSON object, or (XDevAPI) [DbDoc]((https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/DbDoc.html)) object representations, or Map representations. 
+In Document Store we typically persist JSON objects using the [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html)). A JSON object to be persisted must either be a JSON String representation of the object, or a (Java) [DbDoc]((https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/DbDoc.html)) representations, or a Java Map representations. The back and forth mapping of JSON objects to Java objects (DbDocs, Strings and POJOs) is probably the most difficult part of understanding the XDevAPI. 
 
-A String representation must be a properly quoted and escaped JSON string otherwise the call may either fail or you may end up persisting a single String rather than the complex JSON object you were expecting. For example the JSON object below
+A String representation of a JSON object must be a properly quoted and escaped JSON string otherwise the call may either fail or you may end up persisting a single String rather than the complex JSON object you were expecting. For example the JSON object below
 ```JSON
 {
   "firstname": "Fred",
