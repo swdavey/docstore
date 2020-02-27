@@ -371,7 +371,7 @@ The other task of the constructor is to create a Session Connection Pool. The co
 * maxIdleTime: The maximum number of milliseconds a connection is allowed to idle in the queue before being closed. A zero value means infinite.
 * queueTimeout: The maximum number of milliseconds a request is allowed to wait for a connection to become available. A zero value means infinite.
 
-### getBoroughs()
+### @GetMapping("/nycfood/boroughs") getBoroughs()
 This method provides a list of the boroughs of New York that have food outlets registered in the application. The list only contains one entry for each borough, and the boroughs are listed alphabetically.
 ```java
     @GetMapping("/nycfood/boroughs")
@@ -429,7 +429,7 @@ The (pretty-printed) output from getBoroughs() will look like this:
 ```
 Given we are only returning boroughs it may be more helpful just to return the values in an array (e.g. \["Bronx","Brooklyn",...,"Staten Island"\] ) rather than as individual JSON objects. getCusines() tackles this problem.
 
-### getCuisines()
+### @GetMapping("/nycfood/cuisines") getCuisines()
 This method provides a list of cuisines available from the food outlets registered in the application. The list only contains one entry for each cuisine. Note that the output is a JSON array, and that array only contains values. It does not contain any keys. This may be considered an improvement over the code in getBoroughs() because it's really quite boring reading the same key name for each value.
 ```java
     @GetMapping("/nycfood/cuisines")
@@ -457,7 +457,7 @@ However, that will return a JsonValue, e.g. { "String" : "Afghan" }, rather than
 ```
 ["Afghan","African","American","Armenian",...,"Turkish","Vegetarian","Vietnamese/Cambodian/Malaysian"]
 ```
-### getAllOutlets()
+### @GetMapping("/nycfood/outlets") getAllOutlets()
 This method provides an abbreviated list of all of the outlets in the collection. An *abbreviated* outlet only details the outlet's ID, name, the borough in which it is located in and the type of cuisine it serves. The list is sorted alphabetically in borough, cuisine and name order.
 ```java
     @GetMapping("/nycfood/outlets")
@@ -496,7 +496,7 @@ Another change we could make is to limit a search to a borough (which would also
 ```
 In the above example we have used literals, but typically you would use bind variables. These are discussed in the next method.
 
-### getOutlet(@PathVariable String id)
+### @GetMapping("/nycfood/outlet/{id}") getOutlet(@PathVariable String id)
 This method simply returns all the information on a particular outlet identified by the path variable, id. This id is compared to each document's \_id.
 ```java
     @GetMapping("/nycfood/outlet/{id}")
@@ -521,7 +521,7 @@ The find() method has a search expression within it that checks for equality bet
 
 Given we are searching on \_id and we know that these must be unique, we can expect either 0 or 1 DbDoc objects to be returned to the DocResult (i.e. we will either find it in the collection of Documents or not). As such we test for the number of DbDoc objects and if the count is not one, we close the session and throw an exception. If we get past the if statement then we know we have precisely one DbDoc available and that this will represent the Document we were searching for. Consequently, we use the DocResult objects fetchOne() method to retrieve the DbDoc and then call the DbDoc objects toString() method as we have done in the previous sections.
 
-### deleteOutlet(@PathVariable String id)
+### @DeleteMapping("/nycfood/outlet/{id}") deleteOutlet(@PathVariable String id)
 If the passed id matches a Document's \_id then that Document will be deleted. If no match is made a message to that effect is returned. 
 ```java
     @DeleteMapping("/nycfood/outlet/{id}")
@@ -536,5 +536,13 @@ If the passed id matches a Document's \_id then that Document will be deleted. I
         return new ResponseEntity<>(result,HttpStatus.OK);
     }
 ```
+All that is new to us here is the [RemoveStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/RemoveStatement.html) (col.remove()) and the return type, [Result]() from that statement's execution.
 
+### @PatchMapping("/nycfood/outlet/{id}") ResponseEntity<Result> gradeOutlet(@RequestBody Grade newGrade, @PathVariable String id) 
+blah
 
+### @PutMapping("/nycfood/outlet/{id}") ResponseEntity<Result> replaceOutlet(@RequestBody Outlet replacement, @PathVariable String id)
+blah 
+
+### @PostMapping("nycfood/outlet") ResponseEntity<Result> createOutlet(@RequestBody Outlet newOutlet)
+blah
