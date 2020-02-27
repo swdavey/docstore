@@ -2,11 +2,42 @@
 ## Introduction
 First and foremostly this is not meant to be a masterclass in Java. This tutorial's purpose is to show how MySQL's CRUD interface for Document Store can be used with Java. However, in an attempt to provide some realism we have set the tutorial in the context of a REST application, and made use of industry standard frameworks. 
 
-The application is a restaurants listings application for New York City which is based on the data set provided here https://www.w3resource.com/mongodb-exercises/. The data is used unchanged. Potentially you could either build on the code provided in this repository to answer the exercises on the w3resource webpage or simply use MySQL shell's Javascript or Python interface and answer interactively. Either way you should be able to see that MySQL Document Store may serve as an alternative to MongoDB. 
+The application is a REST-based restaurants listings application for New York City. The data set for this application has been taken from https://www.w3resource.com/mongodb-exercises/ and is made up of JSON Documents which take the form:
+```
+{
+    "address": {                               // embedded JSON object
+        "building": "1007",           
+        "coord": [ -73.856077, 40.848447 ],    // simple numeric array
+        "street": "Morris Park Ave",
+        "zipcode": "10462"
+    }
+    "borough": "Bronx",
+    "cuisine": "Bakery",
+    "grades": [{                               // Grade array: each Document will have zero, one or more grade objects
+        "date": { 
+            "$date": 1393804800000             // Possibly *awkward* key
+        }, 
+        "grade": "A", 
+        "score": 2 
+    }, 
+    { 
+        "date": { 
+            "$date": 1378857600000 
+        }, 
+        "grade": "A", 
+        "score": 6 
+    }],
+    "name": "Morris Park Bake Shop",
+    "restaurant_id": "30075445"
+}
+```
+This provides a realistic Document to work with: it is not facile inasmuch that it has nested JSON objects, JSON arrays and a potentially difficult key to deal with in $date; it is not overly complex or large to prevent understanding. Note that when such documents are added to a MySQL Document Store collection an additional field **\_id** will be added which will ensure the uniqueness of the document; MongoDB has a similar device. 
+
+Should you wish to do so, you could either build on the code provided in this repository to answer the exercises on the w3resource webpage or simply use MySQL shell's Javascript or Python interface and answer interactively. Either way you should be able to see that MySQL Document Store can serve as a viable alternative to MongoDB. 
 
 ### How the Application Works
 
-The application is started via a launcher class after which a controller waits for requests. When a request is received the underlying Spring framework routes the request to the required method in the controller and this method responds accordingly. If the request cannot be routed, then the underlying Spring framework will respond to the caller by sending a JSON document that will contain a timestamp, the error, a message providing detail about the error, an HTTP status code, and the URI path. If a request is routed and the method cannot find the resource or throws an exception then it will similarly send an error response.
+The application is started via a launcher class after which a controller waits for requests. When a request is received the underlying Spring framework routes the request to the required method in the controller and this method responds accordingly. If the request cannot be routed or the code throws an exception, then the underlying Spring framework will respond to the caller by sending a JSON document that will contain a timestamp, the error, a message providing detail about the error, an HTTP status code, and the URI path. If a request is routed and the method cannot find the resource or throws an exception then it will similarly send an error response.
 
 ## Development Environment
 The following describes the environment 
@@ -218,7 +249,7 @@ ResponseEntity<String> getOutlet(@PathVariable String id) {
 }
 ```
 Secondly what the client receives:
-```string
+```
 {"_id":"00005e224d500000000000000ee8","address":{"building":"10","coord":[-74.16543,50.676765],"street":"Top Street","zipcode":"WA16 6HT"},"borough":"Knutsford","cuisine":"English","grades":[{"date":{"$date":1582215574237},"grade":"A","score":10},{"date":{"$date":1582214438248},"grade":"A","score":10}],"name":"The Eldon","restaurant_id":"123456"}
 ```
 This is far more useful to most clients. The JSON is properly formed (albeit not pretty-printed). Note also that the numeric values are the bigDecimals rather than integers.
@@ -239,7 +270,7 @@ ResponseEntity<PersistedOutlet> getOutlet(@PathVariable String id) {
 }
 ```
 Secondly what the client receives:
-```json
+```
 {
     "_id": "00005e224d500000000000000ee8",
     "name": "The Eldon",
@@ -316,7 +347,7 @@ class OutletsController {
     }
     @GetMapping("/nycfood/boroughs") ResponseEntity<String> getBoroughs() {...}
     @GetMapping("/nycfood/cuisines") ResponseEntity<List<String>> getCuisines() {...}
-    @GetMapping("/nycfood/outlets") ResponseEntity<List<String>> getAllOutlets() {...}
+    @GetMapping("/nycfood/outlets") ResponseEntity<String> getAllOutlets() {...}
     @GetMapping("/nycfood/outlet/{id}") ResponseEntity<String> getOutlet(@PathVariable String id) {...}
     @DeleteMapping("/nycfood/outlet/{id}") ResponseEntity<Result> deleteOutlet(@PathVariable String id) {...}
     @PatchMapping("/nycfood/outlet/{id}") ResponseEntity<Result> gradeOutlet(@RequestBody Grade newGrade, @PathVariable String id) {...}
@@ -343,15 +374,15 @@ The other task of the constructor is to create a Session Connection Pool. The co
 ### getBoroughs()
 This method provides a list of the boroughs of New York that have food outlets registered in the application. The list only contains one entry for each borough, and the boroughs are listed alphabetically.
 ```java
-@GetMapping("/nycfood/boroughs")
-ResponseEntity<String> getBoroughs() { 
-    Session sess = cli.getSession();
-    Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
-    DocResult dr = col.find().fields("borough AS borough").groupBy("borough").sort("borough").execute();
-    String boroughs = dr.fetchAll().toString();
-    sess.close();
-    return new ResponseEntity<>(boroughs,HttpStatus.OK);
-} 
+    @GetMapping("/nycfood/boroughs")
+    ResponseEntity<String> getBoroughs() { 
+        Session sess = cli.getSession();
+        Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
+        DocResult dr = col.find().fields("borough AS borough").groupBy("borough").sort("borough").execute();
+        String boroughs = dr.fetchAll().toString();
+        sess.close();
+        return new ResponseEntity<>(boroughs,HttpStatus.OK);
+    } 
 ```
 The first line of the method simply gets a session connection from the pool, **cli**, that was created at the time of the OutletController's construction.
 
@@ -401,16 +432,16 @@ Given we are only returning boroughs it may be more helpful just to return the v
 ### getCuisines()
 This method provides a list of cuisines available from the food outlets registered in the application. The list only contains one entry for each cuisine. Note that the output is a JSON array, and that array only contains values. It does not contain any keys. This may be considered an improvement over the code in getBoroughs() because it's really quite boring reading the same key name for each value.
 ```java
-@GetMapping("/nycfood/cuisines")
-ResponseEntity<List<String>> getCuisines() {
-    List<String> cuisineList = new ArrayList<>(); 
-    Session sess = cli.getSession();
-    Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
-    DocResult dr = col.find().fields("cuisine AS cuisine").groupBy("cuisine").sort("cuisine").execute();
-    dr.forEach(dbDoc -> cuisineList.add(mapper.fromJson(dbDoc.get("cuisine").toString(),String.class)));
-    sess.close();
-    return new ResponseEntity<>(cuisineList,HttpStatus.OK);
-} 
+    @GetMapping("/nycfood/cuisines")
+    ResponseEntity<List<String>> getCuisines() {
+        List<String> cuisineList = new ArrayList<>(); 
+        Session sess = cli.getSession();
+        Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
+        DocResult dr = col.find().fields("cuisine AS cuisine").groupBy("cuisine").sort("cuisine").execute();
+        dr.forEach(dbDoc -> cuisineList.add(mapper.fromJson(dbDoc.get("cuisine").toString(),String.class)));
+        sess.close();
+        return new ResponseEntity<>(cuisineList,HttpStatus.OK);
+    } 
 ```
 The code in getCuisines() is very similar to that of getBoroughs() indeed the only differences of substance is the creation of a List to store the outputs from the database (as opposed to using a simple String), and the processing of the DocResult, dr.forEach(...).
 
@@ -422,6 +453,34 @@ However, that will return a JsonValue, e.g. { "String" : "Afghan" }, rather than
 ```java
     dr.forEach(dbDoc -> cuisineList.add(dbDoc.get("cuisine").toString());
 ```
-...but that will result in an escaped jsonString being added to the array, e.g. "\[\"Afghan\",...]". To overcome this, we can simply use Gson (remember mapper is the instance of Gson we created at the time of the OutletsController's construction). In this case we use Gson to create a Java object from an escaped jsonString. To do this we use Gson's fromJson() method. Thi   
-
+...but that will result in an escaped jsonString being added to the array, e.g. "\[\"Afghan\",...]". To overcome this, we convert the jsonString to a String using the mapper's fromJson() method (remember mapper is the instance of Gson we created at the time of the OutletsController's construction). This provides us with the array we require:
+```
+["Afghan","African","American","Armenian",...,"Turkish","Vegetarian","Vietnamese/Cambodian/Malaysian"]
+```
 ### getAllOutlets()
+This method provides an abbreviated list of all of the outlets in the collection. An *abbreviated* outlet only details the outlet's ID, name, the borough in which it is located in and the type of cuisine it serves. The list is sorted alphabetically in borough, cuisine and name order.
+```java
+    @GetMapping("/nycfood/outlets")
+    ResponseEntity<String> getAllOutlets() { 
+        Session sess = cli.getSession();
+        Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
+        DocResult dr = col.find().fields("_id AS id","name AS name","cuisine AS cuisine","borough AS borough").sort("borough","cuisine","name").execute();
+        String outlets = dr.fetchAll().toString();
+        sess.close();
+        return new ResponseEntity<>(outlets,HttpStatus.OK);
+    }
+```
+Again, the code is almost identical to getBoroughs() the only real difference being the sequence of projections used and the sorting across keys.
+
+One of the issues with bringing back entire collections to an application server is memory usage. A fetchAll() method may eat too much memory and so a batching strategy may be required where you retrieve a number of documents from the DocResult and then send them onto the client, before retrieving the next batch and so on. This will require iterating through the list of DbDoc objects in the DocResult which can be achieved with either the DocResult's iterator method (forEach() - see [getSession](###getSession()), or perhaps more conveniently using hasNext() and next() syntax, for example:
+```java
+        ...
+        while(dr.hasNext()) {
+            DbDoc doc = dr.next();
+            // do something with doc
+        }
+        ...
+ ```
+ 
+
+###getOutlet(@PathVariable String id)
