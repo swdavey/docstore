@@ -536,11 +536,26 @@ If the passed id matches a Document's \_id then that Document will be deleted. I
         return new ResponseEntity<>(result,HttpStatus.OK);
     }
 ```
-All that is new to us here is the [RemoveStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/RemoveStatement.html) (col.remove()) and the return type, [Result]() from that statement's execution.
+All that is new to us here is the [RemoveStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/RemoveStatement.html) (col.remove()) and the return type, [Result](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/Result.html) from the RemoveStatement's execution. Result is vary simple object having just three methods: getAffectedItemsCount(), getWarningsCount() which details the number of warnings/errors, and getWarnings() which provides a List of Warnings (which each have a message, level and code). In the above code we expect to have one affected item and that indicates a successful deletion. If we don't have an affected item then it is most likely because we could not match the id.
 
 ### @PatchMapping("/nycfood/outlet/{id}") ResponseEntity<Result> gradeOutlet(@RequestBody Grade newGrade, @PathVariable String id) 
-blah
-
+In this method we update (patch) an existing Document identified by id with a grading. The grading is inserted at the front of the Document's array of grades because it is the most recent. 
+```java
+    @PatchMapping("/nycfood/outlet/{id}")
+    ResponseEntity<Object> gradeOutlet(@RequestBody Grade newGrade, @PathVariable String id) {
+        DbDoc grade = JsonParser.parseDoc(mapper.toJson(newGrade));
+        Session sess = cli.getSession();
+        Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
+        Result result = col.modify("_id = :param").arrayInsert(".grades[0]",grade).bind("param",id).execute(); 
+        sess.close();
+        if (result.getAffectedItemsCount() != 1) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,"No matching document for id on path.");
+        }
+        return new ResponseEntity<>(result,HttpStatus.OK);
+    }
+```
+In this method we introduce the [ModifyStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/ModifyStatement.html). The ModifyStatement has a number of methods that allow: the setting and unsetting of values; the inserting of array elements; the appending of array elenents, and the patching of documents (e.g. the wholesale change of a nested Json object). This method details the arrayInsert method. The first parameter details both the array that the element is to be inserted in and its position in the array. Given we want the insert to be at the front of the array we have used **[0]**. Note also the preceding period (dot) to grades indicates the path of the array (i.e. immediately at the root of the Document). The second parameter is the DbDoc we created as soon as entering the method (see the [DbDoc, Parsers and Strings](### DbDoc, Parsers and Strings) section for details). It is probably worth noting that the API documentation states that either a String or Object can be used as this second parameter. However, our experience suggests that if anything but a DbDoc is used then a String is likely to be written to the array rather than the desired JSON object. 
+  
 ### @PutMapping("/nycfood/outlet/{id}") ResponseEntity<Result> replaceOutlet(@RequestBody Outlet replacement, @PathVariable String id)
 blah 
 
