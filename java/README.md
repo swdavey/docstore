@@ -482,5 +482,18 @@ One of the issues with bringing back entire collections to an application server
         ...
  ```
  
+To make this method more useful to end users we could include the location coordinates for each outlet. These are provided by the key, coord, located in an embedded JSON object called, address, within the outlet document. To access them we would need to provide the path to coord in the fields() String projection using dot notation to delimit the path components:
+```java
+        ...
+        DocResult dr = col.find().fields("_id AS id","address.coord as coords", "name AS name","cuisine AS cuisine","borough AS borough").sort("borough","cuisine","name").execute();
+        ...
+```
+Another change we could make is to limit a search to a borough (which would also obviate the need to print out the borough entry). To do this we would put a search condition in the find() method. For example:
+```java
+        ...
+        DocResult dr = col.find('borough = "Brooklyn"').fields("_id AS id","address.coord as coords", "name AS name","cuisine AS cuisine").sort("borough","cuisine","name").execute();
+        ...
+```
+In the above example we have used literals, but typically you would use bind variables. These are discussed in the next method.
 
-###getOutlet(@PathVariable String id)
+### getOutlet(@PathVariable String id)
