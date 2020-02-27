@@ -314,11 +314,22 @@ etretret
 ## Test Data
 The test data comes from MongoDB's 
 
-## Controller Walkthrough
+## Code Walkthrough
 
-Blah - detail why we are not talking about POJOs, detail what we are providing in terms of the API
+### Plain Old Java Objects (POJOs)
+#### Outlet.java
+blah
+#### Address.java
+blah
+#### Grade.java
+blah
+#### ODate.java
+blah
 
-### OutletsController Class and Constructor
+### Controller - OutletsController.java
+The application only has one controller. Its composition is detailed in logical parts below.
+
+#### OutletsController Class and Constructor
 ```java
 package com.swd.nycfood.outlets;
 
@@ -371,7 +382,7 @@ The other task of the constructor is to create a Session Connection Pool. The co
 * maxIdleTime: The maximum number of milliseconds a connection is allowed to idle in the queue before being closed. A zero value means infinite.
 * queueTimeout: The maximum number of milliseconds a request is allowed to wait for a connection to become available. A zero value means infinite.
 
-### @GetMapping("/nycfood/boroughs") getBoroughs()
+#### @GetMapping("/nycfood/boroughs") getBoroughs()
 This method provides a list of the boroughs of New York that have food outlets registered in the application. The list only contains one entry for each borough, and the boroughs are listed alphabetically.
 ```java
     @GetMapping("/nycfood/boroughs")
@@ -429,7 +440,7 @@ The (pretty-printed) output from getBoroughs() will look like this:
 ```
 Given we are only returning boroughs it may be more helpful just to return the values in an array (e.g. \["Bronx","Brooklyn",...,"Staten Island"\] ) rather than as individual JSON objects. getCusines() tackles this problem.
 
-### @GetMapping("/nycfood/cuisines") getCuisines()
+#### @GetMapping("/nycfood/cuisines") getCuisines()
 This method provides a list of cuisines available from the food outlets registered in the application. The list only contains one entry for each cuisine. Note that the output is a JSON array, and that array only contains values. It does not contain any keys. This may be considered an improvement over the code in getBoroughs() because it's really quite boring reading the same key name for each value.
 ```java
     @GetMapping("/nycfood/cuisines")
@@ -457,7 +468,7 @@ However, that will return a JsonValue, e.g. { "String" : "Afghan" }, rather than
 ```
 ["Afghan","African","American","Armenian",...,"Turkish","Vegetarian","Vietnamese/Cambodian/Malaysian"]
 ```
-### @GetMapping("/nycfood/outlets") getAllOutlets()
+#### @GetMapping("/nycfood/outlets") getAllOutlets()
 This method provides an abbreviated list of all of the outlets in the collection. An *abbreviated* outlet only details the outlet's ID, name, the borough in which it is located in and the type of cuisine it serves. The list is sorted alphabetically in borough, cuisine and name order.
 ```java
     @GetMapping("/nycfood/outlets")
@@ -496,7 +507,7 @@ Another change we could make is to limit a search to a borough (which would also
 ```
 In the above example we have used literals, but typically you would use bind variables. These are discussed in the next method.
 
-### @GetMapping("/nycfood/outlet/{id}") getOutlet(@PathVariable String id)
+#### @GetMapping("/nycfood/outlet/{id}") getOutlet(@PathVariable String id)
 This method simply returns all the information on a particular outlet identified by the path variable, id. This id is compared to each document's \_id.
 ```java
     @GetMapping("/nycfood/outlet/{id}")
@@ -521,7 +532,7 @@ The find() method has a search expression within it that checks for equality bet
 
 Given we are searching on \_id and we know that these must be unique, we can expect either 0 or 1 DbDoc objects to be returned to the DocResult (i.e. we will either find it in the collection of Documents or not). As such we test for the number of DbDoc objects and if the count is not one, we close the session and throw an exception. If we get past the if statement then we know we have precisely one DbDoc available and that this will represent the Document we were searching for. Consequently, we use the DocResult objects fetchOne() method to retrieve the DbDoc and then call the DbDoc objects toString() method as we have done in the previous sections.
 
-### @DeleteMapping("/nycfood/outlet/{id}") deleteOutlet(@PathVariable String id)
+#### @DeleteMapping("/nycfood/outlet/{id}") deleteOutlet(@PathVariable String id)
 If the passed id matches a Document's \_id then that Document will be deleted. If no match is made a message to that effect is returned. 
 ```java
     @DeleteMapping("/nycfood/outlet/{id}")
@@ -538,7 +549,7 @@ If the passed id matches a Document's \_id then that Document will be deleted. I
 ```
 All that is new to us here is the [RemoveStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/RemoveStatement.html) (col.remove()) and the return type, [Result](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/Result.html) from the RemoveStatement's execution. Result is vary simple object having just three methods: getAffectedItemsCount(), getWarningsCount() which details the number of warnings/errors, and getWarnings() which provides a List of Warnings (which each have a message, level and code). In the above code we expect to have one affected item and that indicates a successful deletion. If we don't have an affected item then it is most likely because we could not match the id.
 
-### @PatchMapping("/nycfood/outlet/{id}") ResponseEntity<Result> gradeOutlet(@RequestBody Grade newGrade, @PathVariable String id) 
+#### @PatchMapping("/nycfood/outlet/{id}") ResponseEntity<Result> gradeOutlet(@RequestBody Grade newGrade, @PathVariable String id) 
 In this method we update (patch) an existing Document identified by id with a grading. The grading is inserted at the front of the Document's array of grades because it is the most recent. 
 ```java
     @PatchMapping("/nycfood/outlet/{id}")
@@ -554,10 +565,45 @@ In this method we update (patch) an existing Document identified by id with a gr
         return new ResponseEntity<>(result,HttpStatus.OK);
     }
 ```
-In this method we introduce the [ModifyStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/ModifyStatement.html). The ModifyStatement has a number of methods that allow: the setting and unsetting of values; the inserting of array elements; the appending of array elenents, and the patching of documents (e.g. the wholesale change of a nested Json object). This method details the arrayInsert method. The first parameter details both the array that the element is to be inserted in and its position in the array. Given we want the insert to be at the front of the array we have used **[0]**. Note also the preceding period (dot) to grades indicates the path of the array (i.e. immediately at the root of the Document). The second parameter is the DbDoc we created as soon as entering the method (see the [DbDoc, Parsers and Strings](### DbDoc, Parsers and Strings) section for details). It is probably worth noting that the API documentation states that either a String or Object can be used as this second parameter. However, our experience suggests that if anything but a DbDoc is used then a String is likely to be written to the array rather than the desired JSON object. 
-  
-### @PutMapping("/nycfood/outlet/{id}") ResponseEntity<Result> replaceOutlet(@RequestBody Outlet replacement, @PathVariable String id)
-blah 
+In this method we introduce the [ModifyStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/ModifyStatement.html). The ModifyStatement has a number of methods that allow: 
+* The setting and unsetting of values
+* The inserting of array elements
+* The appending of array elenents
+* The patching of documents (e.g. the wholesale change of a nested Json object). 
 
-### @PostMapping("nycfood/outlet") ResponseEntity<Result> createOutlet(@RequestBody Outlet newOutlet)
+This method uses the arrayInsert method. The first parameter details both the array that the element is to be inserted into and its position in the array. Given we want the insert to be at the front of the array we have used **[0]**. The period (dot) before the array name indicates its path relative to the Document's root. The second parameter is the DbDoc that was created at the start of this method. It is probably worth noting that the API documentation states that either a String or Object can be used as this second parameter. However, our experience suggests that if anything but a DbDoc is used then a String is likely to be written to the array rather than the desired JSON object. 
+  
+#### @PutMapping("/nycfood/outlet/{id}") ResponseEntity<Result> replaceOutlet(@RequestBody Outlet replacement, @PathVariable String id)
 blah
+```java
+    @PutMapping("/nycfood/outlet/{id}")
+    ResponseEntity<Result> gradeOutlet(@RequestBody Outlet replacement, @PathVariable String id) {
+        DbDoc outlet = JsonParser.parseDoc(mapper.toJson(replacement));
+        Session sess = cli.getSession();
+        Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
+        Result result = col.replaceOne(id,outlet); 
+        sess.close();
+        if (result.getAffectedItemsCount() != 1) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,"No matching document for id on path.");
+        }
+        return new ResponseEntity<>(result,HttpStatus.OK);
+    }
+```
+
+#### @PostMapping("nycfood/outlet") ResponseEntity<Result> createOutlet(@RequestBody Outlet newOutlet)
+blah
+```java
+    @PostMapping("nycfood/outlet")
+    ResponseEntity<Result> createOutlet(@RequestBody Outlet newOutlet) {
+        Session sess = cli.getSession();
+        DbDoc outlet = JsonParser.parseDoc(mapper.toJson(newOutlet));
+        Collection col = sess.getSchema(SCHEMA).getCollection(COLLECTION);
+        Result result = col.add(outlet).execute();
+        sess.close();
+        if (result.getAffectedItemsCount() != 1) {
+            throw new ResourceAccessException("Cannot persist outlet.");
+        }
+        return new ResponseEntity<>(result,HttpStatus.OK);
+    }
+}
+```
