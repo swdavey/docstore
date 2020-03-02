@@ -1,5 +1,8 @@
 # Java DocStore Tutorial
-## Introduction
+This tutorial works through a REST application in order to help illustrate how to use MySQL's Document Store XDevAPI for Java. However, before we get into the application's detail some background is required.
+## Background
+
+## Introduction to the Application
 First and foremostly this is not meant to be a masterclass in Java. This tutorial's purpose is to show how MySQL's CRUD interface for Document Store can be used with Java. However, in an attempt to provide some realism we have set the tutorial in the context of a REST application, and made use of industry standard frameworks. 
 
 The application is a REST-based restaurants listings application for New York City. The data set for this application has been taken from https://www.w3resource.com/mongodb-exercises/ and is made up of JSON Documents which take the form:
