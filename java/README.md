@@ -3,13 +3,12 @@ This tutorial works through a REST application in order to help illustrate how t
 ## Background
 
 ### Java - JSON - Java - JSON
-MySQL Document Store persists JSON objects; it does not persist Java objects. Therefore, if we are to use Java with Document Store it will be necessary to convert between Java and JSON, and JSON and Java. Document Store's XDevAPI uses String and DbDoc objects to make these conversions. For example the [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html) interface has the following methods
-
+MySQL Document Store stores JSON objects; it does not store Java objects. Therefore, if we are to use Java with Document Store it will be necessary to convert between Java and JSON, and JSON and Java. The XDevApi does some of this work for us: it takes Java String and DbDoc objects and stores them as JSON objects in the DocumentStore by using its [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html) interface. Similarly it retrieves DbDoc representations of stored JSON objects using its [FindStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/FindStatement.html) interface. At this stage we will concentrate on the AddStatement, here are its most interesting methods:
 ```java
 AddStatement add(String jsonString)  
 AddStatement add(DbDoc... doc)    
 ```
-To create an AddStatement we use an instance of the XDevApi's [Collection](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/Collection.html) interface. Once the Statement is created we need to execute it in order to persist the JSON value to the Document Store:
+To create an AddStatement we use an instance of the XDevApi's [Collection](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/Collection.html). Once the Statement is created we need to execute it in order to persist the JSON value to the Document Store:
 ```java
 // Example 1: create the AddStatement and then execute it 
 AddStatement myStatement = collection.add(myDbDoc);
@@ -28,14 +27,13 @@ Nor can you *throw* any String at the Document Store; it must be formatted as a 
 	"age": 40
 }
 ```
-To persist this in the Document Store we need to create a formatted JSON string representation:
+To persist this in the Document Store we need to create a formatted JSON string representation of it:
 
 ```java
 String s = "{\"firstname\":\"Fred\",\"lastname\":\"Flintstone\",\"age\":40}";
 AddResult result = collection.add(s).execute(); 
 ```
-
-The above is illustrative, in the real world we would probably be dealing with a Java object rather than a String literal. For example we could use an instance of the Person class (shown below) to model Fred Flintstone:
+In the real world we will mostly be dealing with a Java object rather than String literals. For example we could use the Person class (whose form is that of a POJO) to model Fred Flintstone:
 
 ```java
 class Person {
@@ -47,19 +45,26 @@ class Person {
 		this.firstname = firstname;
 		...
 	}
-
+	public void setFirstname(String firstname) {
+		this.firstname = firstname;
+	}
+	public String getFirstname() {
+		return firstname;
+	}
+	/* etc. */
+	public String toString() {
+		return ...
+	}
 	// Getter and Setter methods and a toString() method
 }
 ```
 
-So assuming with have an object instance of the above class we could do one of the following:
+So assuming with have an instance of the above class we could do one of the following:
 * Create a String external to the object and use the object's getter methods to populate it. This may turn into a maintenance nightmare because the same String may need to be written in more than one place in your code.
 * Override its toString() method such that when it is called it returns a properly formatted JSON string. Doing this would subvert the intents of the toString() method.
 * Create a new method called toJsonString(). Adding such a method would make a very ugly POJO (which should consist only of getters, setters and a toString() method).
 
-All of these options have varying degrees of badness and none of them get away from the complexity of creating the JSON String. It should also be remembered that this is a trivial example, think how hard it would be to write a String representation of a JSON object that has nested objects, arrays, etc.
-
-Fortunately, there are classes that map Java POJOs to Json (strings) and back. The Jackson libraries provide an ObjectMapper class, however, the one we have found to be the easiest and most reliable is Google's Gson. This is how to use it:
+All of these options have varying degrees of badness and none of them get away from the complexity of creating the JSON String. Fortunately, there are classes that map Java POJOs to Json (strings) and back. The Jackson libraries provide an ObjectMapper class, however, the one we have found to be the easiest and most reliable is Google's Gson. This is how to use it:
 
 ```java
 import com.google.gson.Gson;
@@ -73,10 +78,10 @@ AddResult result = collection.add(jsonString).execute();
 Person p1 = mapper.fromJson(jsonString,Person.class);
 ```
 
-So using Gson removes the need to write Json Strings and also avoids the temptation to use sub-optimal solutions.
+So using Gson removes the need to write Json Strings and also avoids the temptation to use sub-optimal solutions. What's not to like?
 
 Now that we have investigated persisting (Json) Strings we can turn our attention to DbDoc objects. 
-A DbDoc is the object that the XDevAPI uses to persist and retrieve JSON doucments to/from the database.
+A DbDoc is the object that the XDevAPI uses to persist and retrieve JSON documents to/from the Document Store.
 If you look at the source code for the AddStatement's [AddResult add(String jsonString)](url) method you will see that the jsonString is parsed into a DbDoc before being persisted.
 If you have a properly formatted JSON String then you can create a DbDoc using the XDevAPI's JsonParser:
 
@@ -97,19 +102,22 @@ DbDoc doc2 = new DbDocImpl().add("firstname",new JsonString().setValue(p.getFirs
 ```  
 As you can see this method of creating a DbDoc relies on the builder adding JsonValues. 
 A JsonValue can be a JsonString, JsonNumber, JsonLiteral or JsonArray. For nested classes you add a new DbDoc (which can be created using DbDocImpl). 
-For full details refer to the documentation for [DbDoc](url).
+For full details refer to the documentation for [DbDoc](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/DbDoc.html).
 
-Note: the AddStatement adds DbDoc objects to the database as a sequence. The following details legal calls
+Note that the AddStatement takes a sequence of DbDoc objects. The following are all valid calls:
 ```java
-collection.add(doc1);
-collection.add(doc1,doc2);
+AddStatement s1 = collection.add(doc1);
+AddStatement s2 = collection.add(doc1,doc2);
 DbDoc[] docArray = new DbDoc[2];
 docArray[0] = doc1;
 docArray[1] = doc2;
-collection.add(docArray);
+AddStatement s3 = collection.add(docArray);
+s1.execute();
+s2.execute();
+s3.execute();
 ```
 
-So in summary, in order to persist a JSON document to the database you must use either a properly formatted JSON String or sequence of one or more DbDoc objects. 
+So in summary, to store a JSON document in Document Store you must use either a properly formatted JSON String or a sequence of one or more DbDoc objects. 
 In order to avoid the cumbersome methods of handcrafting a JSON String or using DbDocImpl, you can use a Java-Json mapper like Gson. This makes your code more concise and easier to maintain.
 However, there will probably still be occassions when handcrafting a String or using DbDocImpl will be more pragmatic.
  
