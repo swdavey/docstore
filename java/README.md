@@ -3,13 +3,13 @@ This tutorial works through a REST application in order to help illustrate how t
 ## Background
 
 ### Java - JSON - Java - JSON
-Javascript and Node.js use JavaScript Object Notation to describe objects. Java clearly does not, and so if we are to use Java we will have to convert objects from Java to JSON and from Java to JSON. The XDevAPI uses String and DbDoc objects to effect these conversions, for example the AddStatement interface has these methods
+MySQL Document Store persists JSON objects; it does not persist Java objects. Therefore, if we are to use Java with Document Store it will be necessary to convert between Java and JSON, and JSON and Java. Document Store's XDevAPI uses String and DbDoc objects to make these conversions. For example the [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html) interface has the following methods
 
 ```java
 AddStatement add(String jsonString)  
-AddStatement add(DbDoc... doc) 
+AddStatement add(DbDoc... doc)    
 ```
-To create an AddStatement we use an instance of the XDevApi's Collection class. Once the Statement is created we need to execute it:
+To create an AddStatement we use an instance of the XDevApi's [Collection](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/Collection.html) interface. Once the Statement is created we need to execute it in order to persist the JSON value to the Document Store:
 ```java
 // Example 1: create the AddStatement and then execute it 
 AddStatement myStatement = collection.add(myDbDoc);
@@ -18,8 +18,8 @@ AddResult res1 = myStatement.execute();
 // Example 2: chain execute() to the AddStatement
 AddResult res2 = collection.add(myJsonString).execute();
 ```
-Note that you cannot simply *throw* an arbitrary Java object at the database and hope for it to be persisited!
-Nor can you throw any String at the database; it must be formatted as a JSON string. Consider the following JSON object:
+Note that you cannot simply *throw* an arbitrary Java object at the Document Store and hope for it to be persisited as a JSON object!
+Nor can you *throw* any String at the Document Store; it must be formatted as a JSON string. Consider the following JSON object:
 
 ```json
 {
@@ -28,15 +28,15 @@ Nor can you throw any String at the database; it must be formatted as a JSON str
 	"age": 40
 }
 ```
-
-To persist this in the database as a String we would need to create a formatted JSON string. For example:
+To persist this in the Document Store we need to create a formatted JSON string representation:
 
 ```java
-String s = "{\"firstname\":\"Fred\",\"lastname\":\"Flintstone\",\"age\":40}"
+String s = "{\"firstname\":\"Fred\",\"lastname\":\"Flintstone\",\"age\":40}";
 AddResult result = collection.add(s).execute(); 
 ```
 
-The above is illustrative, in the real world we would probably be dealing with a Java object rather than a literal, something like:
+The above is illustrative, in the real world we would probably be dealing with a Java object rather than a String literal. For example we could use an instance of the Person class (shown below) to model Fred Flintstone:
+
 ```java
 class Person {
 	private String firstname;
@@ -53,12 +53,13 @@ class Person {
 ```
 
 So assuming with have an object instance of the above class we could do one of the following:
-* Create a String external to the object and use the object's getter methods to populate it. This may turn into a maintenance nightmare because the String may need to be written in more than one place.
+* Create a String external to the object and use the object's getter methods to populate it. This may turn into a maintenance nightmare because the same String may need to be written in more than one place in your code.
 * Override its toString() method such that when it is called it returns a properly formatted JSON string. Doing this would subvert the intents of the toString() method.
 * Create a new method called toJsonString(). Adding such a method would make a very ugly POJO (which should consist only of getters, setters and a toString() method).
-All of these options have varying degrees of badness and none of them get away from the complexity of creating the JSON String; remember this is a trivial example, think how hard it would be to write a String representation of a JSON object that has nested objects, arrays, etc.
 
-Fortunately, there are classes that map Java POJOs to Json (strings) and back. The Jackson libraries provide an ObjectMapper class, but the one we have found to be the easiest and most reliable is Google's Gson. This is how to use it:
+All of these options have varying degrees of badness and none of them get away from the complexity of creating the JSON String. It should also be remembered that this is a trivial example, think how hard it would be to write a String representation of a JSON object that has nested objects, arrays, etc.
+
+Fortunately, there are classes that map Java POJOs to Json (strings) and back. The Jackson libraries provide an ObjectMapper class, however, the one we have found to be the easiest and most reliable is Google's Gson. This is how to use it:
 
 ```java
 import com.google.gson.Gson;
@@ -72,7 +73,7 @@ AddResult result = collection.add(jsonString).execute();
 Person p1 = mapper.fromJson(jsonString,Person.class);
 ```
 
-So using Gson removes the need to write Json Strings and also avoids the sub-optimal solutions previous mentioned.
+So using Gson removes the need to write Json Strings and also avoids the temptation to use sub-optimal solutions.
 
 Now that we have investigated persisting (Json) Strings we can turn our attention to DbDoc objects. 
 A DbDoc is the object that the XDevAPI uses to persist and retrieve JSON doucments to/from the database.
