@@ -6,7 +6,11 @@ This tutorial works through a REST application in order to help illustrate how t
 MySQL Document Store stores JSON objects; it does not store Java objects. Therefore, if we are to use Java with Document Store it will be necessary to convert between Java and JSON, and JSON and Java. The XDevApi does some of this work for us: it takes Java String and DbDoc objects and stores them as JSON objects in the DocumentStore by using its [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html) interface. Similarly it retrieves DbDoc representations of stored JSON objects using its [FindStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/FindStatement.html) interface. At this stage we will concentrate on the AddStatement, here are its most interesting methods:
 ```java
 AddStatement add(String jsonString)  
-AddStatement add(DbDoc... doc)    
+AddStatement add(DbDoc... doc)   
+// The following methods are inherited from Statement which AddStatement extends.
+// For an AddStatement RES_T will always be an object that implements the AddResult interface.  
+<RES_T> execute()		           
+CompletableFuture<RES_T> executeAsync()
 ```
 To create an AddStatement we use an instance of the XDevApi's [Collection](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/Collection.html). Once the Statement is created we need to execute it in order to persist the JSON value to the Document Store:
 ```java
@@ -33,7 +37,7 @@ To persist this in the Document Store we need to create a formatted JSON string 
 String s = "{\"firstname\":\"Fred\",\"lastname\":\"Flintstone\",\"age\":40}";
 AddResult result = collection.add(s).execute(); 
 ```
-In the real world we will mostly be dealing with a Java object rather than String literals. For example we could use the Person class (whose form is that of a POJO) to model Fred Flintstone:
+In the real world we will mostly be dealing with Java objects rather than String literals. For example we could use the Person class (whose form is that of a POJO) to model Fred Flintstone:
 
 ```java
 class Person {
@@ -51,20 +55,19 @@ class Person {
 	public String getFirstname() {
 		return firstname;
 	}
-	/* etc. */
+	/* other getters and setters for lastname and age */
 	public String toString() {
 		return ...
 	}
 	// Getter and Setter methods and a toString() method
 }
 ```
-
 So assuming with have an instance of the above class we could do one of the following:
-* Create a String external to the object and use the object's getter methods to populate it. This may turn into a maintenance nightmare because the same String may need to be written in more than one place in your code.
-* Override its toString() method such that when it is called it returns a properly formatted JSON string. Doing this would subvert the intents of the toString() method.
-* Create a new method called toJsonString(). Adding such a method would make a very ugly POJO (which should consist only of getters, setters and a toString() method).
+* Create a JSON formatted String external to the object by using the object's getter methods to populate it. This may turn into a maintenance nightmare because the same String may need to be written in more than one place in your code.
+* Override its toString() method such that when person.toString() is called it returns a properly formatted JSON string. However doing this would subvert the intents of the toString() method which typically creates a String detailing its class name, its members and their values.
+* Create a new method called toJsonString(). This is better than overriding toString() but it still doesn't get us away from the difficulty of having to write a String full of quotes and backslashes. Further, difficulties will arise with nested objects and arrays. 
 
-All of these options have varying degrees of badness and none of them get away from the complexity of creating the JSON String. Fortunately, there are classes that map Java POJOs to Json (strings) and back. The Jackson libraries provide an ObjectMapper class, however, the one we have found to be the easiest and most reliable is Google's Gson. This is how to use it:
+All of these options have varying degrees of badness. Fortunately, there are classes that map Java POJOs to JSON (strings) and back. The Jackson libraries provide an ObjectMapper class, however, the one we have found to be the easiest and most reliable is Google's Gson class. Here is an example of how to use it:
 
 ```java
 import com.google.gson.Gson;
@@ -74,23 +77,21 @@ Person p = new Person("Fred","Flintstone",40);
 String jsonString = mapper.toJson(p);
 AddResult result = collection.add(jsonString).execute();
 
-// Note also we can use reflection to create a Java object from a Json String using the Gson fromJson method
+// Note also we can use reflection to create a Java object from a JSON String using the Gson fromJson method
 Person p1 = mapper.fromJson(jsonString,Person.class);
 ```
 
-So using Gson removes the need to write Json Strings and also avoids the temptation to use sub-optimal solutions. What's not to like?
+So using Gson removes the need to write JSON Strings and also avoids the temptation to use sub-optimal solutions. What's not to like?
 
-Now that we have investigated persisting (Json) Strings we can turn our attention to DbDoc objects. 
+Now that we have investigated persisting (JSON) Strings we can turn our attention to DbDoc objects. 
 A DbDoc is the object that the XDevAPI uses to persist and retrieve JSON documents to/from the Document Store.
-If you look at the source code for the AddStatement's [AddResult add(String jsonString)](url) method you will see that the jsonString is parsed into a DbDoc before being persisted.
+If you look at the source code for the AddStatement's [AddResult add(String jsonString)](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html) method you will see that the jsonString parameter is parsed into a DbDoc before being persisted.
 If you have a properly formatted JSON String then you can create a DbDoc using the XDevAPI's JsonParser:
-
 ```java
 Person p = new Person("Fred","Flintstone",40);
 DbDoc doc = JsonParser.parseDoc(new Gson().toJson(p));
 ```
-
-Alternatively, you can create a DbDoc using the DbDocImpl builder. 
+Alternatively, you can create a DbDoc using the DbDocImpl builder (nb - not a true implementation of the builder pattern). 
 
 ```java
 DbDoc doc1 = new DbDocImpl().add("firstname",new JsonString().setValue("Barney"))
@@ -121,18 +122,30 @@ So in summary, to store a JSON document in Document Store you must use either a 
 In order to avoid the cumbersome methods of handcrafting a JSON String or using DbDocImpl, you can use a Java-Json mapper like Gson. This makes your code more concise and easier to maintain.
 However, there will probably still be occassions when handcrafting a String or using DbDocImpl will be more pragmatic.
  
-Now that we have considered how we can persist documents we should look at how an application both retrieves them and returns them to calling clients.
+Now that we have considered how we can persist documents we should look at how an application both retrieves them from Document Store and returns them to calling clients.
 To retrieve documents from the database we execute a Collection's [FindStatement](url):
 ```java
 DocResult find()
-DocResult find(String searchCondition) 
-```
-So when a find method is executed (by appending .execute() to it) a DocResult is returned. 
+DocResult find(String searchCondition)   
+// The following methods are inherited from Statement which FindStatement extends.
+// For a FindStatement RES_T will always be an object that implements the DocResult interface.  
+<RES_T> execute()		           
+CompletableFuture<RES_T> executeAsync()
+``` 
 A DocResult contains a java.util.Collection of DbDoc objects and methods to access metadata about the success of the find operation (e.g. number of items affected, number of warnings, etc.).
 Each DbDoc represents a JSON document that has been persisted in the database. 
-The two methods that we typically use to access the JSON document within the DbDoc are toString() and toFormattedString(). 
-The former prints a JSON String and the latter pretty prints a JSON String. 
-Typically, all we need to do is return a JSON string to the end client and let the client decide how it wants to process/display it. For example 
+The two methods that we typically use to access the whole JSON document within a DbDoc are toString() and toFormattedString(). 
+The former prints a JSON String and the latter pretty prints a JSON String, for example:
+```java
+DocResult dr = collection.find().limit(1).execute();
+DbDoc doc = dr.fetchOne();
+System.out.println(doc.toString);	// prints {"_id": "00005e224d500000000000000f15", "firstname": "Fred", "lastname": "Flintstone", "age": 40}
+```
+A String such as the one shown in the above example is completely analogous to a JSON Document/
+
+Typically, all we need to do is return a JSON string to the end client and let the client decide how it wants to process/display it. For example a JavaScript app in a browser will interpret the String as a JSON document which may mean pretty printing the whole of the document or extracting individual values and populating objects like drop-down lists, etc.
+
+THE QUESTION IS HOW DO WE RETURN A JSON DOCUMENT
 
 With Spring the routed-to method returns a Java object and the underlying Spring framework does the necessary parsing to return a JSON representation of the Java object. 
 So why don't we just return the DbDoc object(s) retrieved instead of their String representations? 
