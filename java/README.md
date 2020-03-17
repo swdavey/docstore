@@ -3,7 +3,9 @@ This tutorial works through a REST application in order to help illustrate how t
 ## Background
 
 ### Java - JSON - Java - JSON
-MySQL Document Store stores JSON objects; it does not store Java objects. Therefore, if we are to use Java with Document Store it will be necessary to convert between Java and JSON, and JSON and Java. The XDevApi does some of this work for us: it takes Java String and DbDoc objects and stores them as JSON objects in the DocumentStore by using its [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html) interface. Similarly it retrieves DbDoc representations of stored JSON objects using its [FindStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/FindStatement.html) interface. At this stage we will concentrate on the AddStatement. Here are its most interesting methods:
+MySQL Document Store stores JSON objects; it does not store Java objects. Therefore, if we are to use Java with Document Store it will be necessary to convert between Java and JSON, and JSON and Java. The XDevApi does some of this work for us: it takes Java String and DbDoc objects and stores them as JSON objects in the DocumentStore by using its [AddStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/AddStatement.html) interface. JSON documents are retrieved from the DocumentStore using a [FindStatement](https://dev.mysql.com/doc/dev/connector-j/8.0/com/mysql/cj/xdevapi/FindStatement.html) and presents them to your Java code as DbDoc objects. Note that there are other interfaces within the API to create and retrieve documents, but for the time-being we will just look at the AddStatement and FindStatement. 
+
+Consider the Java XDevAPI's AddStatement interface:
 ```java
 AddStatement add(String jsonString)  
 AddStatement add(DbDoc... doc)   
