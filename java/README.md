@@ -205,7 +205,7 @@ The application is a REST-based restaurants listings application for New York Ci
         "coord": [ -73.856077, 40.848447 ],    // simple numeric array
         "street": "Morris Park Ave",
         "zipcode": "10462"
-    }
+    },
     "borough": "Bronx",
     "cuisine": "Bakery",
     "grades": [{                               // Grade array: each Document will have zero, one or more grade objects
